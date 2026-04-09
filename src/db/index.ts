@@ -2,8 +2,8 @@ import Dexie, { type Table } from 'dexie'
 import type { YogaLog, AvatarState } from '../types'
 
 class YogaBloomDB extends Dexie {
-  logs!: Table<YogaLog>
-  avatarState!: Table<AvatarState & { id: number }>
+  logs!: Table<YogaLog, number>
+  avatarState!: Table<AvatarState & { id: number }, number>
 
   constructor() {
     super('YogaBloomDB')
@@ -55,7 +55,6 @@ const AVATAR_STATE_ID = 1
 export async function getAvatarState(): Promise<AvatarState | null> {
   const record = await db.avatarState.get(AVATAR_STATE_ID)
   if (!record) return null
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { id: _id, ...state } = record
   return state
 }
@@ -91,12 +90,26 @@ export async function clearAllData(): Promise<void> {
 export async function exportAsCSV(): Promise<string> {
   const logs = await getAllLogs()
   const headers = [
-    'id', 'date', 'startTime', 'durationMin', 'location',
-    'yogaTypes', 'goals', 'poses', 'bodySignals', 'emotions',
-    'completionLevel', 'energyBefore', 'energyAfter', 'note', 'isFavorite', 'createdAt',
+    'id',
+    'date',
+    'startTime',
+    'durationMin',
+    'location',
+    'yogaTypes',
+    'goals',
+    'poses',
+    'bodySignals',
+    'emotions',
+    'completionLevel',
+    'energyBefore',
+    'energyAfter',
+    'note',
+    'isFavorite',
+    'createdAt',
   ]
+
   const rows = logs.map(log => [
-    log.id,
+    log.id ?? '',
     log.date,
     log.startTime,
     log.durationMin,
@@ -109,9 +122,10 @@ export async function exportAsCSV(): Promise<string> {
     log.completionLevel,
     log.energyBefore,
     log.energyAfter,
-    `"${log.note.replace(/"/g, '""')}"`,
+    `"${(log.note ?? '').replace(/"/g, '""')}"`,
     log.isFavorite,
     log.createdAt,
   ])
+
   return [headers.join(','), ...rows.map(r => r.join(','))].join('\n')
 }
