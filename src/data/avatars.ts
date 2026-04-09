@@ -1,0 +1,87 @@
+import type { AvatarDef, StageDef, BadgeId } from '../types'
+
+export const AVATARS: AvatarDef[] = [
+  {
+    id: 'capybara',
+    name: '水豚',
+    subtitle: '穩定療癒',
+    personality: '溫暖、沉穩、包容一切',
+    description: '水豚總是帶著平靜的微笑，無論外在多麼喧囂，牠的內心始終如一潭靜水。與水豚同行，你會學會放慢腳步，接納每一刻的自己。',
+    emotionalTone: '接納與安定',
+    color: '#A8926E',
+    bgColor: '#F5EDE0',
+  },
+  {
+    id: 'deer',
+    name: '小鹿',
+    subtitle: '敏感覺察',
+    personality: '細膩、靈敏、深度感受',
+    description: '小鹿有著敏銳的感知力，能感受到細微的變化。牠提醒你傾聽身體的低語，珍視那些輕輕劃過心頭的感動。',
+    emotionalTone: '覺察與溫柔',
+    color: '#C4956A',
+    bgColor: '#FDF0E4',
+  },
+  {
+    id: 'fox',
+    name: '狐狸',
+    subtitle: '靈活探索',
+    personality: '好奇、機靈、樂於嘗試',
+    description: '狐狸喜歡探索未知的領域，每一個新的瑜伽式對牠來說都是一次冒險。牠鼓勵你保持好奇心，在練習中發現驚喜。',
+    emotionalTone: '好奇與活力',
+    color: '#D4824A',
+    bgColor: '#FFF0E4',
+  },
+  {
+    id: 'cat',
+    name: '貓咪',
+    subtitle: '優雅放鬆',
+    personality: '從容、自在、不勉強',
+    description: '貓咪是放鬆的大師，知道何時該努力，何時該休息。牠教會你享受當下，不為昨日後悔，不為明日憂慮。',
+    emotionalTone: '從容與優雅',
+    color: '#9E8A7A',
+    bgColor: '#F5EDE8',
+  },
+  {
+    id: 'seal',
+    name: '海豹',
+    subtitle: '柔軟安定',
+    personality: '溫柔、穩健、深根於當下',
+    description: '海豹在水中優雅漂浮，教會你如何在生命的波濤中保持柔軟。不是抵抗，而是順流，找到屬於自己的節奏。',
+    emotionalTone: '柔軟與流動',
+    color: '#7A9EAD',
+    bgColor: '#E8F2F5',
+  },
+  {
+    id: 'bunny',
+    name: '兔子',
+    subtitle: '輕盈成長',
+    personality: '輕快、積極、充滿希望',
+    description: '兔子以輕盈的步伐前進，每一小步都是成長。牠提醒你，不需要完美，只需要持續，每天一點點就足夠了。',
+    emotionalTone: '希望與成長',
+    color: '#C4A0B4',
+    bgColor: '#F8F0F4',
+  },
+]
+
+export const STAGES: StageDef[] = [
+  { id: 1, name: '種子', minXp: 0, maxXp: 99, description: '一顆充滿可能的種子，靜待萌芽的時機' },
+  { id: 2, name: '發芽', minXp: 100, maxXp: 299, description: '嫩芽破土而出，感受生命的悸動' },
+  { id: 3, name: '成長', minXp: 300, maxXp: 699, description: '葉片展開，根系漸深，茁壯而有力' },
+  { id: 4, name: '綻放', minXp: 700, maxXp: 1499, description: '花朵盛開，散發屬於你的獨特芬芳' },
+  { id: 5, name: '光亮', minXp: 1500, maxXp: Infinity, description: '如光般閃耀，照亮自己也溫暖他人' },
+]
+
+export const BADGES: Record<BadgeId, { name: string; description: string; icon: string }> = {
+  first_log: { name: '初心', icon: '🌱', description: '完成第一次記錄' },
+  streak_7: { name: '七日連綿', icon: '🔥', description: '連續練習 7 天' },
+  streak_30: { name: '月之光輝', icon: '🌙', description: '連續練習 30 天' },
+  logs_10: { name: '十練達人', icon: '✨', description: '累積 10 次練習' },
+  logs_50: { name: '五十朵花', icon: '🌸', description: '累積 50 次練習' },
+  logs_100: { name: '百日修行', icon: '💎', description: '累積 100 次練習' },
+  minutes_500: { name: '五百分鐘', icon: '⏳', description: '累積練習 500 分鐘' },
+  minutes_1000: { name: '千分鐘', icon: '🏅', description: '累積練習 1000 分鐘' },
+  all_types: { name: '多元探索', icon: '🦋', description: '嘗試所有瑜伽類型' },
+  explorer: { name: '探索者', icon: '🗺️', description: '在 5 個不同地點練習' },
+  night_owl: { name: '夜貓子', icon: '🦉', description: '晚上 9 點後完成練習' },
+  early_bird: { name: '晨光鳥', icon: '🌅', description: '早上 6 點前完成練習' },
+}

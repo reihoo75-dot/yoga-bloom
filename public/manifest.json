@@ -1,0 +1,30 @@
+{
+  "name": "Yoga Bloom",
+  "short_name": "Yoga Bloom",
+  "description": "你的每日回歸自我的瑜伽旅程",
+  "theme_color": "#FBF7F0",
+  "background_color": "#FBF7F0",
+  "display": "standalone",
+  "orientation": "portrait",
+  "scope": "/",
+  "start_url": "/",
+  "categories": ["health", "fitness", "lifestyle"],
+  "icons": [
+    {
+      "src": "/pwa-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/pwa-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/pwa-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

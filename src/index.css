@@ -1,0 +1,168 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Google Fonts import */
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;600;700&family=Noto+Sans+TC:wght@300;400;500&display=swap');
+
+@layer base {
+  * {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  html {
+    font-size: 16px;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: #FBF7F0;
+    color: #5A4A3F;
+    font-family: 'Noto Serif TC', 'Noto Sans TC', serif;
+    overscroll-behavior: none;
+    overflow-x: hidden;
+    line-height: 1.6;
+  }
+
+  /* Safe area support */
+  .pt-safe {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  /* Range input styling */
+  input[type='range'] {
+    -webkit-appearance: none;
+    appearance: none;
+    height: 8px;
+    border-radius: 9999px;
+    cursor: pointer;
+    outline: none;
+  }
+
+  input[type='range']::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #8FAF8F;
+    box-shadow: 0 2px 8px rgba(143, 175, 143, 0.4);
+    border: 3px solid white;
+    cursor: pointer;
+    transition: transform 0.2s;
+  }
+
+  input[type='range']::-webkit-slider-thumb:hover {
+    transform: scale(1.15);
+  }
+
+  input[type='range']::-moz-range-thumb {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #8FAF8F;
+    box-shadow: 0 2px 8px rgba(143, 175, 143, 0.4);
+    border: 3px solid white;
+    cursor: pointer;
+  }
+
+  /* Scrollbar hide */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Smooth scrolling */
+  * {
+    scroll-behavior: smooth;
+  }
+}
+
+@layer components {
+  /* Glassmorphism */
+  .glass {
+    background: rgba(255, 255, 255, 0.65);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.8);
+  }
+
+  /* Soft card */
+  .card-soft {
+    @apply bg-white/70 backdrop-blur-sm rounded-3xl shadow-soft border border-white/80;
+  }
+
+  /* Page container */
+  .page {
+    @apply min-h-screen bg-cream-100 pb-24;
+  }
+
+  /* Bottom safe spacing */
+  .pb-nav {
+    padding-bottom: calc(4rem + env(safe-area-inset-bottom));
+  }
+}
+
+@layer utilities {
+  /* Text gradient */
+  .text-gradient-sage {
+    background: linear-gradient(135deg, #8FAF8F, #668C66);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Breathing animation */
+  .breathe {
+    animation: breathe 4s ease-in-out infinite;
+  }
+
+  /* Shimmer effect */
+  .shimmer {
+    background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.4) 50%, transparent 100%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+  }
+}
+
+/* Recharts customization */
+.recharts-tooltip-wrapper {
+  outline: none !important;
+}
+
+.recharts-cartesian-grid-horizontal line,
+.recharts-cartesian-grid-vertical line {
+  stroke: #F0E8D8;
+}
+
+/* Selection color */
+::selection {
+  background-color: rgba(143, 175, 143, 0.25);
+}
+
+/* Focus styles */
+:focus-visible {
+  outline: 2px solid #8FAF8F;
+  outline-offset: 2px;
+}
+
+/* Page animation */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* Mobile optimization */
+@media (max-width: 430px) {
+  html {
+    font-size: 15px;
+  }
+}

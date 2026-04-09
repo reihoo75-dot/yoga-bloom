@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" rx="14" fill="#FBF7F0"/>
+  <!-- Lotus/bloom simplified -->
+  <ellipse cx="32" cy="38" rx="6" ry="10" fill="#8FAF8F" transform="rotate(-30 32 38)"/>
+  <ellipse cx="32" cy="38" rx="6" ry="10" fill="#8FAF8F" transform="rotate(30 32 38)"/>
+  <ellipse cx="32" cy="34" rx="6" ry="10" fill="#A8C5A8"/>
+  <ellipse cx="32" cy="36" rx="5" ry="8" fill="#EDB0B8" transform="rotate(-15 32 36)"/>
+  <ellipse cx="32" cy="36" rx="5" ry="8" fill="#EDB0B8" transform="rotate(15 32 36)"/>
+  <circle cx="32" cy="34" r="5" fill="#FBF7F0"/>
+  <circle cx="32" cy="34" r="3.5" fill="#D4B896"/>
+  <!-- stem -->
+  <line x1="32" y1="48" x2="32" y2="56" stroke="#8FAF8F" stroke-width="2.5" stroke-linecap="round"/>
+</svg>
