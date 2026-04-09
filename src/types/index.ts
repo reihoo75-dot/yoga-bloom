@@ -6,12 +6,15 @@ export interface YogaLog {
   location: string
   yogaTypes: string[]
   goals: string[]
-  poses: string[]
-  bodySignals: string[]
-  emotions: string[]
-  completionLevel: number // 0-100
-  energyBefore: number // 1-5
-  energyAfter: number // 1-5
+  poses: string[]           // preset + custom pose ids/names
+  bodySignals: string[]     // preset + custom signals
+  bodyParts: string[]       // body regions selected from figure
+  bodyNote: string          // free text body feeling note
+  emotions: string[]        // preset + custom emotions
+  emotionNote: string       // free text emotion note
+  completionLevel: number   // 0-100
+  energyBefore: number      // 1-5
+  energyAfter: number       // 1-5
   note: string
   isFavorite: boolean
   createdAt: string
@@ -82,3 +85,28 @@ export interface InsightResult {
 }
 
 export type InsightPeriod = 'day' | 'week' | 'month' | 'quarter' | 'year'
+
+export interface PoseDef {
+  id: string
+  name: string           // Chinese name
+  nameEn: string         // English name
+  icon: string           // emoji
+  description: string    // short description
+  bodyParts: string[]    // which body parts this targets
+  category: 'standing' | 'floor' | 'seated' | 'inversion' | 'balance' | 'restorative' | 'prone'
+  difficulty: 'beginner' | 'intermediate' | 'advanced'
+}
+
+export interface BodyPartDef {
+  id: string
+  label: string
+  recommendedPoses: string[]  // pose ids
+}
+
+export interface MonthlyTheme {
+  month: number          // 1-12
+  name: string           // theme name
+  description: string    // short description
+  messages: string[]     // encouragement messages pool
+  color: string          // tailwind color key
+}

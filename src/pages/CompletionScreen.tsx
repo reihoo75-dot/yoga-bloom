@@ -4,9 +4,11 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { AvatarDisplay } from '../components/avatar/AvatarDisplay'
 import { Button } from '../components/ui/Button'
 import { useAppStore } from '../store/useAppStore'
-import { getStageInfo } from '../utils/xp'
+import { useLogStore } from '../store/useLogStore'
+import { getStageInfo, calculateStreak } from '../utils/xp'
 import { COMPLETION_MESSAGES } from '../data/messages'
 import { STAGES } from '../data/avatars'
+import { getCurrentMonthTheme, getMilestoneMessage, getStreakMessage } from '../data/monthlyThemes'
 import type { YogaLog } from '../types'
 
 interface Particle {
@@ -39,6 +41,7 @@ export function CompletionScreen() {
   const navigate = useNavigate()
   const location = useLocation()
   const { settings, avatarState, pendingXP, clearPendingXP } = useAppStore()
+  const { logs } = useLogStore()
 
   const state = location.state as { log: YogaLog; xp: number } | null
   const xpGained = state?.xp ?? pendingXP ?? 10
@@ -46,10 +49,25 @@ export function CompletionScreen() {
   const [showXP, setShowXP] = useState(false)
   const [showMessage, setShowMessage] = useState(false)
   const [celebrate, setCelebrate] = useState(false)
-  const [message] = useState(() =>
-    COMPLETION_MESSAGES[Math.floor(Math.random() * COMPLETION_MESSAGES.length)]
-  )
   const mounted = useRef(false)
+
+  // Pick messages: priority — milestone > streak > monthly theme > random
+  const monthTheme = getCurrentMonthTheme()
+  const totalLogs = avatarState.totalLogs
+  const streak = calculateStreak(logs)
+  const milestoneMsg = getMilestoneMessage(totalLogs)
+  const streakMsg = getStreakMessage(streak)
+
+  const [message] = useState(() => {
+    if (milestoneMsg) return milestoneMsg
+    if (streakMsg) return streakMsg
+    // 50% chance monthly theme, 50% general
+    if (Math.random() > 0.5) {
+      const pool = monthTheme.messages
+      return pool[Math.floor(Math.random() * pool.length)]
+    }
+    return COMPLETION_MESSAGES[Math.floor(Math.random() * COMPLETION_MESSAGES.length)]
+  })
 
   useEffect(() => {
     if (mounted.current) return
@@ -65,8 +83,10 @@ export function CompletionScreen() {
   const { stage, progress } = getStageInfo(avatarState.xp)
   const prevProgress = getStageInfo(Math.max(0, avatarState.xp - xpGained)).progress
 
+  const isMilestone = Boolean(milestoneMsg || streakMsg)
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-sage-50 via-cream-100 to-blush-50 flex flex-col items-center justify-center px-6 overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-b from-sage-50 via-cream-100 to-blush-50 flex flex-col items-center justify-center px-5 overflow-hidden">
       {/* Particles */}
       <div className="fixed inset-0 pointer-events-none">
         <AnimatePresence>
@@ -89,8 +109,19 @@ export function CompletionScreen() {
         initial={{ opacity: 0, scale: 0.85, y: 30 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         transition={{ duration: 0.6, ease: 'backOut' }}
-        className="w-full max-w-sm bg-white/80 backdrop-blur-md rounded-4xl shadow-soft-xl border border-white/90 p-7 text-center"
+        className="w-full max-w-sm bg-white/80 backdrop-blur-md rounded-4xl shadow-soft-xl border border-white/90 p-6 text-center"
       >
+        {/* Monthly theme badge */}
+        <motion.div
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="inline-flex items-center gap-1.5 bg-cream-100 rounded-full px-3 py-1 mb-3"
+        >
+          <span className="text-xs text-warm-400">{new Date().getMonth() + 1}月主題</span>
+          <span className="text-xs font-semibold text-warm-500">「{monthTheme.name}」</span>
+        </motion.div>
+
         {/* Avatar */}
         <div className="flex justify-center mb-4">
           <div className="relative">
@@ -118,7 +149,7 @@ export function CompletionScreen() {
           transition={{ delay: 0.4 }}
         >
           <h2 className="text-2xl font-display font-semibold text-warm-600 mb-1">
-            練習完成 🌸
+            {isMilestone ? '里程碑！🎉' : '練習完成 🌸'}
           </h2>
           <p className="text-warm-400 text-sm">{STAGES.find(s => s.id === stage.id)?.description}</p>
         </motion.div>
@@ -130,10 +161,10 @@ export function CompletionScreen() {
               initial={{ opacity: 0, scale: 0.5, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               transition={{ duration: 0.5, ease: 'backOut' }}
-              className="my-4"
+              className="my-3"
             >
               <div className="inline-flex items-center gap-2 bg-sage-50 border border-sage-200 rounded-2xl px-4 py-2">
-                <span className="text-2xl">✨</span>
+                <span className="text-xl">✨</span>
                 <span className="font-display font-semibold text-sage-500 text-xl">+{xpGained} XP</span>
               </div>
             </motion.div>
@@ -169,9 +200,14 @@ export function CompletionScreen() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
-              className="bg-cream-50 rounded-2xl p-4 mb-5"
+              className={`rounded-2xl p-4 mb-4 ${isMilestone ? 'bg-blush-50 border border-blush-100' : 'bg-cream-50'}`}
             >
               <p className="text-sm text-warm-500 leading-relaxed">{message}</p>
+              {!isMilestone && (
+                <p className="text-xs text-warm-300 mt-2 italic">
+                  ✦ {monthTheme.description}
+                </p>
+              )}
             </motion.div>
           )}
         </AnimatePresence>
@@ -184,20 +220,33 @@ export function CompletionScreen() {
             transition={{ delay: 1.2 }}
             className="grid grid-cols-3 gap-2 mb-5"
           >
-            <div className="bg-cream-50 rounded-2xl p-2">
+            <div className="bg-cream-50 rounded-2xl p-2.5">
               <p className="text-xs text-warm-300">時長</p>
-              <p className="text-sm font-medium text-warm-500">{state.log.durationMin}分</p>
+              <p className="text-sm font-medium text-warm-500">{state.log.durationMin} 分</p>
             </div>
-            <div className="bg-cream-50 rounded-2xl p-2">
+            <div className="bg-cream-50 rounded-2xl p-2.5">
               <p className="text-xs text-warm-300">完成度</p>
               <p className="text-sm font-medium text-warm-500">{state.log.completionLevel}%</p>
             </div>
-            <div className="bg-cream-50 rounded-2xl p-2">
+            <div className="bg-cream-50 rounded-2xl p-2.5">
               <p className="text-xs text-warm-300">能量變化</p>
               <p className="text-sm font-medium text-warm-500">
                 {state.log.energyBefore}→{state.log.energyAfter}
               </p>
             </div>
+          </motion.div>
+        )}
+
+        {/* Streak info */}
+        {streak > 1 && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 1.3 }}
+            className="flex items-center justify-center gap-2 mb-4"
+          >
+            <span className="text-base">🔥</span>
+            <span className="text-sm text-warm-500">連續 <strong>{streak}</strong> 天練習</span>
           </motion.div>
         )}
 

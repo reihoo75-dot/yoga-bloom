@@ -3,21 +3,54 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
-    <meta name="theme-color" content="#FBF7F0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no, maximum-scale=1" />
+    <meta name="theme-color" content="#FBF7F0" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#FBF7F0" media="(prefers-color-scheme: dark)" />
     <meta name="description" content="Yoga Bloom — 你的每日回歸自我的瑜伽旅程" />
+
+    <!-- PWA / Apple -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Yoga Bloom" />
+    <meta name="mobile-web-app-capable" content="yes" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="Yoga Bloom" />
+    <meta property="og:description" content="你的每日回歸自我的瑜伽旅程" />
+    <meta property="og:type" content="website" />
+
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;600;700&family=Noto+Sans+TC:wght@300;400;500&display=swap" rel="stylesheet" />
+
     <title>Yoga Bloom</title>
     <style>
-      html, body {
+      /* Prevent overscroll/bounce and ensure proper sizing */
+      *, *::before, *::after { box-sizing: border-box; }
+      html {
         overscroll-behavior: none;
         -webkit-overflow-scrolling: touch;
+        height: 100%;
+      }
+      body {
+        margin: 0;
+        min-height: 100%;
+        overscroll-behavior: none;
+        -webkit-tap-highlight-color: transparent;
+        -webkit-text-size-adjust: 100%;
+      }
+      #root {
+        min-height: 100dvh;
+      }
+      /* Smooth scrolling */
+      * {
+        -webkit-overflow-scrolling: touch;
+      }
+      /* Prevent iOS callout on long press */
+      img, a, button {
+        -webkit-touch-callout: none;
       }
     </style>
   </head>
