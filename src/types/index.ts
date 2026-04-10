@@ -91,6 +91,7 @@ export interface PoseDef {
   name: string           // Chinese name
   nameEn: string         // English name
   icon: string           // emoji
+  image?: string         // path to actual image (optional)
   description: string    // short description
   bodyParts: string[]    // which body parts this targets
   category: 'standing' | 'floor' | 'seated' | 'inversion' | 'balance' | 'restorative' | 'prone'

@@ -2,6 +2,7 @@ import { motion } from 'framer-motion'
 import { AvatarSVG } from './AvatarSVG'
 import type { AvatarId } from '../../types'
 import { AVATARS } from '../../data/avatars'
+import { useAppStore } from '../../store/useAppStore'
 
 interface AvatarDisplayProps {
   avatarId: AvatarId
@@ -21,6 +22,7 @@ export function AvatarDisplay({
   className = '',
 }: AvatarDisplayProps) {
   const def = AVATARS.find(a => a.id === avatarId)!
+  const stage = useAppStore(s => s.avatarState.stage)
 
   return (
     <div className={`flex flex-col items-center ${className}`}>
@@ -41,7 +43,7 @@ export function AvatarDisplay({
         }
         style={{ filter: `drop-shadow(0 8px 16px ${def.color}40)` }}
       >
-        <AvatarSVG id={avatarId} size={size} />
+        <AvatarSVG id={avatarId} size={size} stage={stage} />
       </motion.div>
       {showName && (
         <p className="mt-2 text-sm font-medium text-warm-500">{def.name} · {def.subtitle}</p>

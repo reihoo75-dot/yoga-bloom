@@ -10,162 +10,22 @@ interface PosePickerProps {
   customPoses?: string[]
 }
 
-// Simple SVG stick figure illustrations for each pose
-function PoseIllustration({ poseId, size = 60 }: { poseId: string; size?: number }) {
-  const illustrations: Record<string, React.ReactNode> = {
-    mountain: (
-      <svg viewBox="0 0 60 80" width={size} height={size * 1.33}>
-        <circle cx="30" cy="8" r="6" fill="none" stroke="#8FAF8F" strokeWidth="2.5" />
-        <line x1="30" y1="14" x2="30" y2="45" stroke="#8FAF8F" strokeWidth="2.5" strokeLinecap="round" />
-        <line x1="30" y1="22" x2="16" y2="34" stroke="#8FAF8F" strokeWidth="2.5" strokeLinecap="round" />
-        <line x1="30" y1="22" x2="44" y2="34" stroke="#8FAF8F" strokeWidth="2.5" strokeLinecap="round" />
-        <line x1="30" y1="45" x2="20" y2="68" stroke="#8FAF8F" strokeWidth="2.5" strokeLinecap="round" />
-        <line x1="30" y1="45" x2="40" y2="68" stroke="#8FAF8F" strokeWidth="2.5" strokeLinecap="round" />
-      </svg>
-    ),
-    downdog: (
-      <svg viewBox="0 0 80 60" width={size * 1.33} height={size}>
-        <circle cx="20" cy="52" r="6" fill="none" stroke="#8FAF8F" strokeWidth="2.5" />
-        <line x1="20" y1="46" x2="40" y2="24" stroke="#8FAF8F" strokeWidth="2.5" strokeLinecap="round" />
-        <line x1="40" y1="24" x2="60" y2="46" stroke="#8FAF8F" strokeWidth="2.5" strokeLinecap="round" />
-        <line x1="14" y1="36" x2="4" y2="54" stroke="#8FAF8F" strokeWidth="2.5" strokeLinecap="round" />
-        <line x1="26" y1="36" x2="16" y2="56" stroke="#8FAF8F" strokeWidth="2.5" strokeLinecap="round" />
-        <line x1="58" y1="46" x2="54" y2="58" stroke="#8FAF8F" strokeWidth="2.5" strokeLinecap="round" />
-        <line x1="62" y1="46" x2="68" y2="58" stroke="#8FAF8F" strokeWidth="2.5" strokeLinecap="round" />
-      </svg>
-    ),
-    warrior1: (
-      <svg viewBox="0 0 70 80" width={size * 0.875} height={size * 1.33}>
-        <circle cx="35" cy="8" r="6" fill="none" stroke="#8FAF8F" strokeWidth="2.5" />
-        <line x1="35" y1="14" x2="35" y2="42" stroke="#8FAF8F" strokeWidth="2.5" strokeLinecap="round" />
-        <line x1="35" y1="22" x2="18" y2="18" stroke="#8FAF8F" strokeWidth="2.5" strokeLinecap="round" />
-        <line x1="35" y1="22" x2="52" y2="18" stroke="#8FAF8F" strokeWidth="2.5" strokeLinecap="round" />
-        <line x1="35" y1="42" x2="20" y2="58" stroke="#8FAF8F" strokeWidth="2.5" strokeLinecap="round" />
-        <line x1="35" y1="42" x2="50" y2="70" stroke="#8FAF8F" strokeWidth="2.5" strokeLinecap="round" />
-        <line x1="20" y1="58" x2="12" y2="72" stroke="#8FAF8F" strokeWidth="2.5" strokeLinecap="round" />
-      </svg>
-    ),
-    tree: (
-      <svg viewBox="0 0 60 80" width={size} height={size * 1.33}>
-        <circle cx="30" cy="8" r="6" fill="none" stroke="#8FAF8F" strokeWidth="2.5" />
-        <line x1="30" y1="14" x2="30" y2="48" stroke="#8FAF8F" strokeWidth="2.5" strokeLinecap="round" />
-        <line x1="30" y1="22" x2="12" y2="30" stroke="#8FAF8F" strokeWidth="2.5" strokeLinecap="round" />
-        <line x1="30" y1="22" x2="48" y2="30" stroke="#8FAF8F" strokeWidth="2.5" strokeLinecap="round" />
-        <line x1="30" y1="48" x2="30" y2="72" stroke="#8FAF8F" strokeWidth="2.5" strokeLinecap="round" />
-        <line x1="30" y1="55" x2="18" y2="48" stroke="#8FAF8F" strokeWidth="2.5" strokeLinecap="round" />
-        <circle cx="18" cy="48" r="3" fill="#8FAF8F" />
-      </svg>
-    ),
-    child: (
-      <svg viewBox="0 0 80 50" width={size * 1.33} height={size}>
-        <circle cx="72" cy="18" r="6" fill="none" stroke="#8FAF8F" strokeWidth="2.5" />
-        <path d="M72 24 Q60 30 40 30 Q20 30 8 28" stroke="#8FAF8F" strokeWidth="2.5" fill="none" strokeLinecap="round" />
-        <line x1="40" y1="30" x2="44" y2="44" stroke="#8FAF8F" strokeWidth="2.5" strokeLinecap="round" />
-        <line x1="50" y1="30" x2="54" y2="44" stroke="#8FAF8F" strokeWidth="2.5" strokeLinecap="round" />
-        <line x1="60" y1="28" x2="8" y2="28" stroke="#8FAF8F" strokeWidth="2" strokeLinecap="round" />
-      </svg>
-    ),
-    cobra: (
-      <svg viewBox="0 0 80 55" width={size * 1.33} height={size}>
-        <circle cx="68" cy="14" r="6" fill="none" stroke="#8FAF8F" strokeWidth="2.5" />
-        <path d="M68 20 Q60 26 50 28 Q30 30 10 28" stroke="#8FAF8F" strokeWidth="2.5" fill="none" strokeLinecap="round" />
-        <line x1="30" y1="28" x2="28" y2="44" stroke="#8FAF8F" strokeWidth="2.5" strokeLinecap="round" />
-        <line x1="50" y1="28" x2="50" y2="44" stroke="#8FAF8F" strokeWidth="2.5" strokeLinecap="round" />
-        <line x1="55" y1="26" x2="65" y2="16" stroke="#8FAF8F" strokeWidth="2.5" strokeLinecap="round" />
-      </svg>
-    ),
-    bridge: (
-      <svg viewBox="0 0 80 55" width={size * 1.33} height={size}>
-        <circle cx="12" cy="18" r="6" fill="none" stroke="#8FAF8F" strokeWidth="2.5" />
-        <path d="M12 24 Q20 26 30 24 Q50 20 60 28 Q64 32 62 40" stroke="#8FAF8F" strokeWidth="2.5" fill="none" strokeLinecap="round" />
-        <line x1="44" y1="22" x2="40" y2="44" stroke="#8FAF8F" strokeWidth="2.5" strokeLinecap="round" />
-        <line x1="56" y1="26" x2="56" y2="44" stroke="#8FAF8F" strokeWidth="2.5" strokeLinecap="round" />
-      </svg>
-    ),
-    plank: (
-      <svg viewBox="0 0 80 45" width={size * 1.33} height={size}>
-        <circle cx="10" cy="16" r="6" fill="none" stroke="#8FAF8F" strokeWidth="2.5" />
-        <path d="M10 22 L70 22" stroke="#8FAF8F" strokeWidth="2.5" strokeLinecap="round" />
-        <line x1="20" y1="22" x2="18" y2="38" stroke="#8FAF8F" strokeWidth="2.5" strokeLinecap="round" />
-        <line x1="28" y1="22" x2="26" y2="38" stroke="#8FAF8F" strokeWidth="2.5" strokeLinecap="round" />
-        <line x1="58" y1="22" x2="60" y2="38" stroke="#8FAF8F" strokeWidth="2.5" strokeLinecap="round" />
-        <line x1="68" y1="22" x2="70" y2="38" stroke="#8FAF8F" strokeWidth="2.5" strokeLinecap="round" />
-      </svg>
-    ),
-    savasana: (
-      <svg viewBox="0 0 80 40" width={size * 1.33} height={size}>
-        <circle cx="10" cy="14" r="6" fill="none" stroke="#8FAF8F" strokeWidth="2.5" />
-        <line x1="10" y1="20" x2="72" y2="22" stroke="#8FAF8F" strokeWidth="2.5" strokeLinecap="round" />
-        <line x1="25" y1="20" x2="20" y2="34" stroke="#8FAF8F" strokeWidth="2.5" strokeLinecap="round" />
-        <line x1="38" y1="21" x2="50" y2="34" stroke="#8FAF8F" strokeWidth="2.5" strokeLinecap="round" />
-        <line x1="58" y1="22" x2="52" y2="36" stroke="#8FAF8F" strokeWidth="2.5" strokeLinecap="round" />
-        <line x1="68" y1="22" x2="74" y2="36" stroke="#8FAF8F" strokeWidth="2.5" strokeLinecap="round" />
-      </svg>
-    ),
-    lotus: (
-      <svg viewBox="0 0 60 65" width={size} height={size * 1.1}>
-        <circle cx="30" cy="10" r="6" fill="none" stroke="#8FAF8F" strokeWidth="2.5" />
-        <line x1="30" y1="16" x2="30" y2="40" stroke="#8FAF8F" strokeWidth="2.5" strokeLinecap="round" />
-        <line x1="30" y1="22" x2="14" y2="30" stroke="#8FAF8F" strokeWidth="2.5" strokeLinecap="round" />
-        <line x1="30" y1="22" x2="46" y2="30" stroke="#8FAF8F" strokeWidth="2.5" strokeLinecap="round" />
-        <path d="M30 40 Q10 44 8 56" stroke="#8FAF8F" strokeWidth="2.5" fill="none" strokeLinecap="round" />
-        <path d="M30 40 Q50 44 52 56" stroke="#8FAF8F" strokeWidth="2.5" fill="none" strokeLinecap="round" />
-        <line x1="8" y1="56" x2="52" y2="56" stroke="#8FAF8F" strokeWidth="2" strokeLinecap="round" />
-      </svg>
-    ),
-    twist: (
-      <svg viewBox="0 0 65 70" width={size * 1.1} height={size * 1.17}>
-        <circle cx="30" cy="10" r="6" fill="none" stroke="#8FAF8F" strokeWidth="2.5" />
-        <path d="M30 16 Q32 28 28 38" stroke="#8FAF8F" strokeWidth="2.5" fill="none" strokeLinecap="round" />
-        <line x1="30" y1="24" x2="12" y2="20" stroke="#8FAF8F" strokeWidth="2.5" strokeLinecap="round" />
-        <line x1="30" y1="24" x2="48" y2="32" stroke="#8FAF8F" strokeWidth="2.5" strokeLinecap="round" />
-        <path d="M28 38 Q10 42 8 56" stroke="#8FAF8F" strokeWidth="2.5" fill="none" strokeLinecap="round" />
-        <path d="M28 38 Q46 42 50 56" stroke="#8FAF8F" strokeWidth="2.5" fill="none" strokeLinecap="round" />
-        <line x1="8" y1="56" x2="50" y2="56" stroke="#8FAF8F" strokeWidth="2" strokeLinecap="round" />
-      </svg>
-    ),
-    pigeon: (
-      <svg viewBox="0 0 75 60" width={size * 1.25} height={size}>
-        <circle cx="60" cy="14" r="6" fill="none" stroke="#8FAF8F" strokeWidth="2.5" />
-        <path d="M60 20 Q50 26 38 28 Q22 28 12 20" stroke="#8FAF8F" strokeWidth="2.5" fill="none" strokeLinecap="round" />
-        <path d="M38 28 Q34 40 30 54" stroke="#8FAF8F" strokeWidth="2.5" fill="none" strokeLinecap="round" />
-        <path d="M38 28 Q50 36 62 44" stroke="#8FAF8F" strokeWidth="2.5" fill="none" strokeLinecap="round" />
-        <line x1="50" y1="24" x2="46" y2="14" stroke="#8FAF8F" strokeWidth="2.5" strokeLinecap="round" />
-      </svg>
-    ),
-    forward_fold: (
-      <svg viewBox="0 0 65 75" width={size * 1.1} height={size * 1.25}>
-        <circle cx="32" cy="8" r="6" fill="none" stroke="#8FAF8F" strokeWidth="2.5" />
-        <path d="M32 14 Q30 24 28 34 Q26 40 22 46" stroke="#8FAF8F" strokeWidth="2.5" fill="none" strokeLinecap="round" />
-        <line x1="30" y1="20" x2="12" y2="16" stroke="#8FAF8F" strokeWidth="2.5" strokeLinecap="round" />
-        <line x1="30" y1="20" x2="14" y2="34" stroke="#8FAF8F" strokeWidth="2.5" strokeLinecap="round" />
-        <line x1="28" y1="34" x2="20" y2="60" stroke="#8FAF8F" strokeWidth="2.5" strokeLinecap="round" />
-        <line x1="28" y1="34" x2="40" y2="60" stroke="#8FAF8F" strokeWidth="2.5" strokeLinecap="round" />
-      </svg>
-    ),
-    cat_cow: (
-      <svg viewBox="0 0 75 55" width={size * 1.25} height={size}>
-        <circle cx="66" cy="22" r="6" fill="none" stroke="#8FAF8F" strokeWidth="2.5" />
-        <path d="M66 28 Q55 38 40 40 Q25 42 14 38" stroke="#8FAF8F" strokeWidth="2.5" fill="none" strokeLinecap="round" />
-        <line x1="52" y1="38" x2="50" y2="50" stroke="#8FAF8F" strokeWidth="2.5" strokeLinecap="round" />
-        <line x1="30" y1="40" x2="28" y2="52" stroke="#8FAF8F" strokeWidth="2.5" strokeLinecap="round" />
-        <line x1="60" y1="32" x2="60" y2="16" stroke="#8FAF8F" strokeWidth="2" strokeLinecap="round" strokeDasharray="3,2" />
-      </svg>
-    ),
+function PoseIllustration({ pose, size = 60 }: { pose: PoseDef; size?: number }) {
+  if (pose.image) {
+    return (
+      <img
+        src={pose.image}
+        alt={pose.name}
+        width={size}
+        height={size}
+        style={{ width: size, height: size, objectFit: 'contain' }}
+      />
+    )
   }
-
-  const defaultIllustration = (
-    <svg viewBox="0 0 60 80" width={size} height={size * 1.33}>
-      <circle cx="30" cy="8" r="6" fill="none" stroke="#8FAF8F" strokeWidth="2.5" />
-      <line x1="30" y1="14" x2="30" y2="45" stroke="#8FAF8F" strokeWidth="2.5" strokeLinecap="round" />
-      <line x1="30" y1="22" x2="16" y2="32" stroke="#8FAF8F" strokeWidth="2.5" strokeLinecap="round" />
-      <line x1="30" y1="22" x2="44" y2="32" stroke="#8FAF8F" strokeWidth="2.5" strokeLinecap="round" />
-      <line x1="30" y1="45" x2="20" y2="68" stroke="#8FAF8F" strokeWidth="2.5" strokeLinecap="round" />
-      <line x1="30" y1="45" x2="40" y2="68" stroke="#8FAF8F" strokeWidth="2.5" strokeLinecap="round" />
-    </svg>
+  // Fallback: emoji icon for poses without images
+  return (
+    <span style={{ fontSize: size * 0.6, lineHeight: 1 }}>{pose.icon}</span>
   )
-
-  return illustrations[poseId] || defaultIllustration
 }
 
 export function PosePicker({ selected, onToggle, onAddCustom, customPoses = [] }: PosePickerProps) {
@@ -246,7 +106,7 @@ export function PosePicker({ selected, onToggle, onAddCustom, customPoses = [] }
               )}
               <div className="flex items-center gap-2 mb-2">
                 <div className="w-10 h-10 flex items-center justify-center bg-cream-50 rounded-xl flex-shrink-0">
-                  <PoseIllustration poseId={pose.id} size={32} />
+                  <PoseIllustration pose={pose} size={32} />
                 </div>
                 <div className="min-w-0">
                   <p className="text-xs font-semibold text-warm-600 leading-tight">{pose.name}</p>
@@ -275,7 +135,7 @@ export function PosePicker({ selected, onToggle, onAddCustom, customPoses = [] }
           >
             <div className="flex items-start gap-3">
               <div className="w-14 h-14 flex items-center justify-center bg-white rounded-2xl flex-shrink-0">
-                <PoseIllustration poseId={selectedPoseDetail.id} size={44} />
+                <PoseIllustration pose={selectedPoseDetail} size={44} />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
