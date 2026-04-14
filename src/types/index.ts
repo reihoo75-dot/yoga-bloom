@@ -111,3 +111,59 @@ export interface MonthlyTheme {
   messages: string[]     // encouragement messages pool
   color: string          // tailwind color key
 }
+
+// ─── Daily Intention Cards ─────────────────────────────────────────────────
+
+export type CardTheme =
+  | 'grounding'
+  | 'openness'
+  | 'strength'
+  | 'rest'
+  | 'awareness'
+  | 'joy'
+  | 'release'
+  | 'flow'
+  | 'gratitude'
+  | 'presence'
+
+export type CardColor = 'sage' | 'blush' | 'beige'
+
+export type CardCtaTarget = 'breathing' | 'log' | 'insights'
+
+export interface IntentionCard {
+  id: number
+  theme: CardTheme
+  title: string           // main heading on back of card
+  shortQuote: string      // short poetic line shown prominently
+  longGuidance: string    // longer guidance paragraph
+  emoji: string
+  color: CardColor
+  ctaLabel: string
+  ctaTarget: CardCtaTarget
+}
+
+// ─── Breathing ────────────────────────────────────────────────────────────
+
+export type BreathingMode = 'box' | 'calm' | 'energize'
+
+export interface BreathingSession {
+  id?: number
+  date: string            // YYYY-MM-DD
+  startTime: string       // HH:mm
+  durationSec: number
+  mode: BreathingMode
+  cyclesCompleted: number
+  createdAt: string
+}
+
+// ─── Special States ────────────────────────────────────────────────────────
+
+export type SpecialStateType = 'menstrual' | 'cold' | 'fatigue' | 'poor_sleep'
+
+export interface SpecialState {
+  id?: number
+  date: string            // YYYY-MM-DD
+  states: SpecialStateType[]
+  note: string
+  updatedAt: string
+}

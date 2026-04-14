@@ -9,6 +9,7 @@ import { Insights } from './pages/Insights'
 import { AvatarGarden } from './pages/AvatarGarden'
 import { Settings } from './pages/Settings'
 import { CompletionScreen } from './pages/CompletionScreen'
+import { Breathing } from './pages/Breathing'
 import { useAppStore } from './store/useAppStore'
 
 export function App() {
@@ -22,7 +23,8 @@ export function App() {
   const isOnboarding = !settings.onboardingComplete
   const isCompletion = location.pathname === '/completion'
   const isLog = location.pathname === '/log'
-  const hideNav = isOnboarding || isCompletion || isLog
+  const isBreathing = location.pathname === '/breathing'
+  const hideNav = isOnboarding || isCompletion || isLog || isBreathing
 
   if (isOnboarding && location.pathname !== '/onboarding') {
     return <Navigate to="/onboarding" replace />
@@ -37,6 +39,7 @@ export function App() {
         <Route path="/timeline" element={<Timeline />} />
         <Route path="/insights" element={<Insights />} />
         <Route path="/garden" element={<AvatarGarden />} />
+        <Route path="/breathing" element={<Breathing />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/completion" element={<CompletionScreen />} />
         <Route path="*" element={<Navigate to="/" replace />} />

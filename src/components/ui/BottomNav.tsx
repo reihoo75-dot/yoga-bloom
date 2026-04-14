@@ -6,7 +6,7 @@ const NAV_ITEMS = [
   { to: '/log', label: '記錄', icon: LogIcon },
   { to: '/timeline', label: '日誌', icon: TimelineIcon },
   { to: '/insights', label: '洞察', icon: InsightsIcon },
-  { to: '/garden', label: '花園', icon: GardenIcon },
+  { to: '/breathing', label: '呼吸', icon: BreathingIcon },
 ]
 
 export function BottomNav() {
@@ -104,13 +104,16 @@ function InsightsIcon({ active }: { active: boolean }) {
   )
 }
 
-function GardenIcon({ active }: { active: boolean }) {
+function BreathingIcon({ active }: { active: boolean }) {
   return (
     <svg className="w-5 h-5 relative z-10" fill="none" viewBox="0 0 24 24">
-      <path d="M12 22V12M12 12C12 12 7 10 5 6c4 0 7 3 7 6zM12 12C12 12 17 10 19 6c-4 0-7 3-7 6z"
+      <circle cx="12" cy="12" r="5"
         stroke="currentColor" strokeWidth={active ? 2.5 : 1.8}
-        strokeLinecap="round" strokeLinejoin="round"
-        fill={active ? 'currentColor' : 'none'} fillOpacity={active ? 0.15 : 0}
+        fill={active ? 'currentColor' : 'none'} fillOpacity={active ? 0.18 : 0}
+      />
+      <path d="M12 2v2M12 20v2M2 12h2M20 12h2M5.64 5.64l1.41 1.41M16.95 16.95l1.41 1.41M5.64 18.36l1.41-1.41M16.95 7.05l1.41-1.41"
+        stroke="currentColor" strokeWidth={active ? 2 : 1.6}
+        strokeLinecap="round"
       />
     </svg>
   )

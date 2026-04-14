@@ -1,15 +1,23 @@
 import Dexie, { type Table } from 'dexie'
-import type { YogaLog, AvatarState } from '../types'
+import type { YogaLog, AvatarState, BreathingSession, SpecialState } from '../types'
 
 class YogaBloomDB extends Dexie {
   logs!: Table<YogaLog, number>
   avatarState!: Table<AvatarState & { id: number }, number>
+  breathingSessions!: Table<BreathingSession, number>
+  specialStates!: Table<SpecialState, number>
 
   constructor() {
     super('YogaBloomDB')
     this.version(1).stores({
       logs: '++id, date, createdAt, isFavorite',
       avatarState: 'id',
+    })
+    this.version(2).stores({
+      logs: '++id, date, createdAt, isFavorite',
+      avatarState: 'id',
+      breathingSessions: '++id, date, createdAt',
+      specialStates: '++id, date, updatedAt',
     })
   }
 }
@@ -63,11 +71,47 @@ export async function saveAvatarState(state: AvatarState): Promise<void> {
   await db.avatarState.put({ ...state, id: AVATAR_STATE_ID })
 }
 
+// --- Breathing Sessions ---
+export async function addBreathingSession(session: Omit<BreathingSession, 'id'>): Promise<number> {
+  return await db.breathingSessions.add(session as BreathingSession)
+}
+
+export async function getBreathingSessionsByDate(date: string): Promise<BreathingSession[]> {
+  return await db.breathingSessions.where('date').equals(date).toArray()
+}
+
+export async function getAllBreathingSessions(): Promise<BreathingSession[]> {
+  return await db.breathingSessions.orderBy('createdAt').reverse().toArray()
+}
+
+// --- Special States ---
+export async function getSpecialStateByDate(date: string): Promise<SpecialState | null> {
+  const results = await db.specialStates.where('date').equals(date).toArray()
+  return results[0] ?? null
+}
+
+export async function saveSpecialState(state: Omit<SpecialState, 'id'>): Promise<void> {
+  const existing = await getSpecialStateByDate(state.date)
+  if (existing?.id != null) {
+    await db.specialStates.update(existing.id, state)
+  } else {
+    await db.specialStates.add(state as SpecialState)
+  }
+}
+
+export async function deleteSpecialState(date: string): Promise<void> {
+  const existing = await getSpecialStateByDate(date)
+  if (existing?.id != null) {
+    await db.specialStates.delete(existing.id)
+  }
+}
+
 // --- Export / Import ---
 export async function exportAllData(): Promise<string> {
   const logs = await getAllLogs()
   const avatarState = await getAvatarState()
-  return JSON.stringify({ logs, avatarState, exportedAt: new Date().toISOString() }, null, 2)
+  const breathingSessions = await getAllBreathingSessions()
+  return JSON.stringify({ logs, avatarState, breathingSessions, exportedAt: new Date().toISOString() }, null, 2)
 }
 
 export async function importAllData(jsonString: string): Promise<void> {
@@ -79,11 +123,17 @@ export async function importAllData(jsonString: string): Promise<void> {
   if (data.avatarState) {
     await saveAvatarState(data.avatarState)
   }
+  if (data.breathingSessions && Array.isArray(data.breathingSessions)) {
+    await db.breathingSessions.clear()
+    await db.breathingSessions.bulkAdd(data.breathingSessions)
+  }
 }
 
 export async function clearAllData(): Promise<void> {
   await db.logs.clear()
   await db.avatarState.clear()
+  await db.breathingSessions.clear()
+  await db.specialStates.clear()
 }
 
 // --- CSV Export ---

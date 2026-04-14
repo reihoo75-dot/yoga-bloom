@@ -1,7 +1,7 @@
 import { create } from 'zustand'
-import type { UserSettings, AvatarState, AvatarId, StageId } from '../types'
+import type { UserSettings, AvatarState, AvatarId, StageId, SpecialState } from '../types'
 import { STAGES } from '../data/avatars'
-import { getAvatarState, saveAvatarState } from '../db'
+import { getAvatarState, saveAvatarState, getSpecialStateByDate, saveSpecialState } from '../db'
 
 const SETTINGS_KEY = 'yoga_bloom_settings'
 
@@ -49,6 +49,7 @@ interface AppStore {
   avatarState: AvatarState
   pendingXP: number // for animation
   isLoaded: boolean
+  todaySpecialState: SpecialState | null
 
   updateSettings: (partial: Partial<UserSettings>) => void
   setAvatar: (id: AvatarId) => void
@@ -59,6 +60,10 @@ interface AppStore {
   addResources: (leaves: number, stars: number, petals: number) => Promise<void>
   addBadge: (badge: string) => Promise<void>
   clearPendingXP: () => void
+
+  loadTodaySpecialState: (date: string) => Promise<void>
+  setTodaySpecialState: (state: SpecialState) => Promise<void>
+  clearTodaySpecialState: (date: string) => Promise<void>
 }
 
 export const useAppStore = create<AppStore>((set, get) => ({
@@ -66,6 +71,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
   avatarState: defaultAvatarState,
   pendingXP: 0,
   isLoaded: false,
+  todaySpecialState: null,
 
   updateSettings: (partial) => {
     const next = { ...get().settings, ...partial }
@@ -128,4 +134,20 @@ export const useAppStore = create<AppStore>((set, get) => ({
   },
 
   clearPendingXP: () => set({ pendingXP: 0 }),
+
+  loadTodaySpecialState: async (date) => {
+    const state = await getSpecialStateByDate(date)
+    set({ todaySpecialState: state })
+  },
+
+  setTodaySpecialState: async (state) => {
+    await saveSpecialState(state)
+    set({ todaySpecialState: state })
+  },
+
+  clearTodaySpecialState: async (date) => {
+    const { deleteSpecialState } = await import('../db')
+    await deleteSpecialState(date)
+    set({ todaySpecialState: null })
+  },
 }))
