@@ -320,106 +320,6 @@ export const YOGA_POSES: PoseDef[] = [
     category: 'restorative',
     difficulty: 'beginner',
   },
-  {
-    id: 'cat_cow',
-    name: '貓牛式',
-    nameEn: 'Marjaryasana-Bitilasana',
-    icon: '🐄',
-    description: '配合呼吸溫柔活動脊椎，舒緩背部緊繃，幫助暖身與覺知身體。',
-    bodyParts: ['spine', 'lower_back', 'neck', 'core'],
-    category: 'floor',
-    difficulty: 'beginner',
-  },
-  {
-    id: 'lizard',
-    name: '蜥蜴式',
-    nameEn: 'Utthan Pristhasana',
-    icon: '🦎',
-    description: '深度髖屈肌伸展，打開腹股溝，特別適合久坐後的髖部釋放。',
-    bodyParts: ['hips', 'legs', 'lower_back'],
-    category: 'floor',
-    difficulty: 'intermediate',
-  },
-  {
-    id: 'supine_twist',
-    name: '仰臥扭轉',
-    nameEn: 'Supta Matsyendrasana',
-    icon: '💫',
-    description: '溫和扭轉，完全放鬆背部，理想的收尾放鬆動作。',
-    bodyParts: ['spine', 'lower_back', 'hips'],
-    category: 'floor',
-    difficulty: 'beginner',
-  },
-  {
-    id: 'butterfly',
-    name: '蝴蝶式',
-    nameEn: 'Baddha Konasana',
-    icon: '🦋',
-    description: '打開腹股溝與髖部，伸展大腿內側，有助於骨盆健康。',
-    bodyParts: ['hips', 'legs'],
-    category: 'seated',
-    difficulty: 'beginner',
-  },
-  {
-    id: 'lotus',
-    name: '蓮花式',
-    nameEn: 'Padmasana',
-    icon: '🪷',
-    description: '冥想坐姿，深度打開髖部，穩定心神，是靜坐練習的基礎。',
-    bodyParts: ['hips', 'legs'],
-    category: 'seated',
-    difficulty: 'intermediate',
-  },
-  {
-    id: 'shoulder_stand',
-    name: '肩倒立',
-    nameEn: 'Sarvangasana',
-    icon: '🔄',
-    description: '全身倒立，促進血液循環，平衡甲狀腺，是高效的滋養式。',
-    bodyParts: ['neck', 'shoulders', 'spine', 'legs'],
-    category: 'inversion',
-    difficulty: 'intermediate',
-  },
-  {
-    id: 'headstand',
-    name: '頭倒立',
-    nameEn: 'Sirsasana',
-    icon: '🙃',
-    description: '倒立之王，增強核心與手臂力量，促進血液往大腦循環，提升專注力。',
-    bodyParts: ['core', 'shoulders', 'spine', 'neck'],
-    category: 'inversion',
-    difficulty: 'advanced',
-  },
-  {
-    id: 'legs_up',
-    name: '靠牆倒箭式',
-    nameEn: 'Viparita Karani',
-    icon: '🌙',
-    description: '雙腿靠牆，溫和倒立，放鬆雙腿與腰背，舒緩疲勞與焦慮。',
-    bodyParts: ['legs', 'lower_back', 'hips'],
-    category: 'restorative',
-    difficulty: 'beginner',
-  },
-  {
-    id: 'savasana',
-    name: '攤屍式',
-    nameEn: 'Savasana',
-    icon: '😴',
-    description: '完全放鬆，整合練習成果，讓身心在靜止中深層修復。',
-    bodyParts: ['spine', 'core'],
-    category: 'restorative',
-    difficulty: 'beginner',
-  },
-  {
-    id: 'fish',
-    name: '魚式',
-    nameEn: 'Matsyasana',
-    icon: '🐟',
-    description: '後彎打開胸腔與喉嚨，是肩倒立的反向動作，釋放頸部緊繃。',
-    bodyParts: ['chest', 'neck', 'shoulders', 'spine'],
-    category: 'floor',
-    difficulty: 'beginner',
-  },
 ]
 
 // Helper: get poses by body part
@@ -432,6 +332,9 @@ export function getPoseById(id: string): PoseDef | undefined {
   return YOGA_POSES.find(p => p.id === id)
 }
 
+// Lookup map for fast access
+export const POSE_MAP = Object.fromEntries(YOGA_POSES.map(p => [p.id, p]))
+
 // Categories for filtering
 export const POSE_CATEGORIES = [
   { id: 'all', label: '全部' },
@@ -439,7 +342,6 @@ export const POSE_CATEGORIES = [
   { id: 'floor', label: '地板' },
   { id: 'seated', label: '坐姿' },
   { id: 'balance', label: '平衡' },
-  { id: 'inversion', label: '倒立' },
   { id: 'restorative', label: '修復' },
   { id: 'prone', label: '俯趴' },
 ]
@@ -448,4 +350,10 @@ export const DIFFICULTY_LABELS = {
   beginner: '入門',
   intermediate: '中階',
   advanced: '進階',
+}
+
+export const DIFFICULTY_COLORS = {
+  beginner: 'bg-sage-100 text-sage-600',
+  intermediate: 'bg-beige-100 text-beige-600',
+  advanced: 'bg-blush-100 text-blush-500',
 }
