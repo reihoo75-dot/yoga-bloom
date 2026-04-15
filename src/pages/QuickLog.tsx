@@ -21,22 +21,25 @@ import type { YogaLog } from '../types'
 
 type Section = 'duration' | 'location' | 'types' | 'goals' | 'poses' | 'signals' | 'emotions' | 'completion' | 'note'
 
-const SECTIONS: { id: Section; label: string; emoji: string; hint: string }[] = [
-  { id: 'duration', label: '練習時長', emoji: '⏱️', hint: '今天練了多久？' },
-  { id: 'location', label: '練習地點', emoji: '📍', hint: '在哪裡練習？' },
-  { id: 'types', label: '瑜伽類型', emoji: '🧘', hint: '今天練了什麼類型的瑜伽？' },
-  { id: 'goals', label: '今天的目標', emoji: '🎯', hint: '這次練習想達成什麼？' },
-  { id: 'poses', label: '練習的體位法', emoji: '🌿', hint: '今天練了哪些動作？' },
-  { id: 'signals', label: '練習後身體感受', emoji: '💫', hint: '身體有什麼感覺？' },
-  { id: 'emotions', label: '今天的情緒狀態', emoji: '🌊', hint: '練習前後的心情如何？' },
-  { id: 'completion', label: '完成度與能量', emoji: '⚡', hint: '今天的完成狀況' },
-  { id: 'note', label: '給自己的一段話', emoji: '📝', hint: '想對自己說些什麼？' },
+const SECTIONS: { id: Section; label: string; hint: string }[] = [
+  { id: 'duration',   label: '練習時長',     hint: '今天練了多久？' },
+  { id: 'location',   label: '練習地點',     hint: '在哪裡練習？' },
+  { id: 'types',      label: '瑜伽類型',     hint: '今天練了什麼類型？' },
+  { id: 'goals',      label: '今日目標',     hint: '這次想達成什麼？' },
+  { id: 'poses',      label: '練習體位',     hint: '今天練了哪些動作？' },
+  { id: 'signals',    label: '身體感受',     hint: '練習後身體的感覺？' },
+  { id: 'emotions',   label: '情緒狀態',     hint: '練習前後的心情？' },
+  { id: 'completion', label: '完成度與能量', hint: '今天的狀況如何？' },
+  { id: 'note',       label: '給自己的話',   hint: '想對自己說些什麼？' },
 ]
 
 interface LogState extends Partial<YogaLog> {
   customPoses: string[]
   customBodySignals: string[]
   customEmotions: string[]
+  customYogaTypes: string[]
+  customGoals: string[]
+  customLocation: string
 }
 
 const defaultLog = (): LogState => ({
@@ -60,6 +63,9 @@ const defaultLog = (): LogState => ({
   customPoses: [],
   customBodySignals: [],
   customEmotions: [],
+  customYogaTypes: [],
+  customGoals: [],
+  customLocation: '',
 })
 
 export function QuickLog() {
@@ -82,15 +88,23 @@ export function QuickLog() {
     })
   }
 
-  function addCustomTag(field: 'customPoses' | 'customBodySignals' | 'customEmotions', value: string) {
-    setLog(prev => ({
-      ...prev,
-      [field]: prev[field].includes(value) ? prev[field] : [...prev[field], value],
-      // Also add to the main array so it gets saved
-      poses: field === 'customPoses' && !prev.poses?.includes(value) ? [...(prev.poses || []), value] : prev.poses,
-      bodySignals: field === 'customBodySignals' && !prev.bodySignals?.includes(value) ? [...(prev.bodySignals || []), value] : prev.bodySignals,
-      emotions: field === 'customEmotions' && !prev.emotions?.includes(value) ? [...(prev.emotions || []), value] : prev.emotions,
-    }))
+  function addCustomTag(
+    field: 'customPoses' | 'customBodySignals' | 'customEmotions' | 'customYogaTypes' | 'customGoals',
+    value: string
+  ) {
+    setLog(prev => {
+      const logField: keyof LogState =
+        field === 'customPoses' ? 'poses' :
+        field === 'customBodySignals' ? 'bodySignals' :
+        field === 'customEmotions' ? 'emotions' :
+        field === 'customYogaTypes' ? 'yogaTypes' : 'goals'
+      const existing = (prev[logField] as string[]) || []
+      return {
+        ...prev,
+        [field]: prev[field].includes(value) ? prev[field] : [...prev[field], value],
+        [logField]: existing.includes(value) ? existing : [...existing, value],
+      }
+    })
   }
 
   function addCustomPoseFromPicker(poseName: string) {
@@ -111,7 +125,7 @@ export function QuickLog() {
       date: log.date!,
       startTime: log.startTime!,
       durationMin: log.durationMin!,
-      location: log.location || 'home',
+      location: log.customLocation || log.location || 'home',
       yogaTypes: log.yogaTypes!,
       goals: log.goals!,
       poses: allPoses,
@@ -151,9 +165,9 @@ export function QuickLog() {
   function getCompletedCount(section: Section): number {
     switch (section) {
       case 'duration': return log.durationMin! > 0 ? 1 : 0
-      case 'location': return log.location ? 1 : 0
-      case 'types': return log.yogaTypes?.length || 0
-      case 'goals': return log.goals?.length || 0
+      case 'location': return (log.location || log.customLocation) ? 1 : 0
+      case 'types': return (log.yogaTypes?.length || 0) + log.customYogaTypes.length
+      case 'goals': return (log.goals?.length || 0) + log.customGoals.length
       case 'poses': return (log.poses?.length || 0) + log.customPoses.length
       case 'signals': return (log.bodySignals?.length || 0) + log.customBodySignals.length + (log.bodyParts?.length || 0)
       case 'emotions': return (log.emotions?.length || 0) + log.customEmotions.length
@@ -165,13 +179,15 @@ export function QuickLog() {
   return (
     <PageTransition className="min-h-screen bg-cream-100 pb-36">
       {/* Header */}
-      <div className="sticky top-0 z-30 bg-cream-100/95 backdrop-blur-sm border-b border-cream-200 px-5 py-3 pt-safe">
+      <div className="sticky top-0 z-30 bg-cream-100/95 backdrop-blur-sm border-b border-cream-200 px-4 py-3 pt-safe">
         <div className="flex items-center justify-between">
           <button
-            onClick={() => navigate(-1)}
-            className="w-10 h-10 rounded-2xl bg-white/70 flex items-center justify-center text-warm-400 text-lg"
+            onClick={() => navigate('/')}
+            className="w-10 h-10 rounded-2xl bg-white/70 flex items-center justify-center text-warm-400"
           >
-            ←
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+              <path d="M19 12H5M12 5l-7 7 7 7" />
+            </svg>
           </button>
           <div className="text-center">
             <h1 className="font-display font-semibold text-warm-600 text-base">記錄練習</h1>
@@ -181,18 +197,20 @@ export function QuickLog() {
         </div>
       </div>
 
-      <div ref={scrollRef} className="px-4 pt-4 space-y-3">
+      <div ref={scrollRef} className="px-4 pt-4 space-y-2.5">
         {SECTIONS.map((section, idx) => {
           const count = getCompletedCount(section.id)
           return (
             <LogSection
               key={section.id}
               section={section}
+              index={idx}
               isOpen={openSection === section.id}
               onToggle={() => setOpenSection(openSection === section.id ? 'duration' : section.id)}
               delay={idx * 0.04}
               completedCount={count}
             >
+              {/* ── DURATION ── */}
               {section.id === 'duration' && (
                 <div className="space-y-3">
                   <div className="flex flex-wrap gap-2">
@@ -203,71 +221,90 @@ export function QuickLog() {
                         onClick={() => setLog(p => ({ ...p, durationMin: d }))}
                         className={`px-5 py-2.5 rounded-2xl text-sm font-medium border transition-all duration-200 min-h-[44px]
                           ${log.durationMin === d
-                            ? 'bg-sage-400 text-white border-sage-400 shadow-sm scale-105'
-                            : 'bg-white/70 text-warm-500 border-sage-100'
+                            ? 'bg-sage-300 text-white border-sage-300 shadow-soft'
+                            : 'bg-white/70 text-warm-400 border-cream-200'
                           }`}
                       >
                         {d} 分
                       </motion.button>
                     ))}
                   </div>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      placeholder="自訂分鐘數"
-                      min={1}
-                      max={300}
-                      className="flex-1 px-4 py-2.5 rounded-2xl bg-white/70 border border-sage-100 text-sm text-warm-500 focus:outline-none focus:border-sage-300 min-h-[44px]"
-                      onChange={e => setLog(p => ({ ...p, durationMin: parseInt(e.target.value) || 30 }))}
-                    />
-                    <span className="text-sm text-warm-400 flex-shrink-0">分鐘</span>
-                  </div>
+                  <CustomTextInput
+                    placeholder="自訂分鐘數"
+                    type="number"
+                    value={log.durationMin === DURATION_OPTIONS.find(d => d === log.durationMin) ? '' : String(log.durationMin || '')}
+                    onChange={v => setLog(p => ({ ...p, durationMin: parseInt(v) || 30 }))}
+                    suffix="分鐘"
+                  />
                 </div>
               )}
 
+              {/* ── LOCATION ── */}
               {section.id === 'location' && (
-                <div className="flex flex-wrap gap-2">
-                  {LOCATION_OPTIONS.map(l => (
-                    <TagButton
-                      key={l.id}
-                      label={l.label}
-                      icon={l.icon}
-                      selected={log.location === l.id}
-                      onClick={() => setLog(p => ({ ...p, location: l.id }))}
-                    />
-                  ))}
+                <div className="space-y-3">
+                  <div className="flex flex-wrap gap-2">
+                    {LOCATION_OPTIONS.map(l => (
+                      <TagButton
+                        key={l.id}
+                        label={l.label}
+                        selected={log.location === l.id && !log.customLocation}
+                        onClick={() => setLog(p => ({ ...p, location: l.id, customLocation: '' }))}
+                      />
+                    ))}
+                  </div>
+                  <CustomTextInput
+                    placeholder="自訂地點..."
+                    value={log.customLocation}
+                    onChange={v => setLog(p => ({ ...p, customLocation: v, location: v ? '' : p.location }))}
+                  />
                 </div>
               )}
 
+              {/* ── YOGA TYPES ── */}
               {section.id === 'types' && (
-                <div className="flex flex-wrap gap-2">
-                  {YOGA_TYPES.map(t => (
-                    <TagButton
-                      key={t.id}
-                      label={t.label}
-                      icon={t.icon}
-                      selected={log.yogaTypes?.includes(t.id)}
-                      onClick={() => toggle('yogaTypes', t.id)}
-                    />
-                  ))}
+                <div className="space-y-3">
+                  <div className="flex flex-wrap gap-2">
+                    {YOGA_TYPES.map(t => (
+                      <TagButton
+                        key={t.id}
+                        label={t.label}
+                        selected={log.yogaTypes?.includes(t.id)}
+                        onClick={() => toggle('yogaTypes', t.id)}
+                      />
+                    ))}
+                  </div>
+                  <CustomTagInput
+                    onAdd={v => addCustomTag('customYogaTypes', v)}
+                    placeholder="自訂類型..."
+                    existingCustom={log.customYogaTypes}
+                  />
                 </div>
               )}
 
+              {/* ── GOALS ── */}
               {section.id === 'goals' && (
-                <div className="flex flex-wrap gap-2">
-                  {GOALS.map(g => (
-                    <TagButton
-                      key={g.id}
-                      label={g.label}
-                      icon={g.icon}
-                      selected={log.goals?.includes(g.id)}
-                      onClick={() => toggle('goals', g.id)}
-                      color="blush"
-                    />
-                  ))}
+                <div className="space-y-3">
+                  <div className="flex flex-wrap gap-2">
+                    {GOALS.map(g => (
+                      <TagButton
+                        key={g.id}
+                        label={g.label}
+                        selected={log.goals?.includes(g.id)}
+                        onClick={() => toggle('goals', g.id)}
+                        color="blush"
+                      />
+                    ))}
+                  </div>
+                  <CustomTagInput
+                    onAdd={v => addCustomTag('customGoals', v)}
+                    placeholder="自訂目標..."
+                    existingCustom={log.customGoals}
+                    color="blush"
+                  />
                 </div>
               )}
 
+              {/* ── POSES ── */}
               {section.id === 'poses' && (
                 <PosePicker
                   selected={log.poses || []}
@@ -277,9 +314,9 @@ export function QuickLog() {
                 />
               )}
 
+              {/* ── BODY SIGNALS ── */}
               {section.id === 'signals' && (
                 <div className="space-y-4">
-                  {/* Preset tags */}
                   <div>
                     <p className="text-xs text-warm-400 mb-2">常見感受（可多選）</p>
                     <div className="flex flex-wrap gap-2">
@@ -287,7 +324,6 @@ export function QuickLog() {
                         <TagButton
                           key={s.id}
                           label={s.label}
-                          icon={s.icon}
                           selected={log.bodySignals?.includes(s.id)}
                           onClick={() => toggle('bodySignals', s.id)}
                           color="blush"
@@ -304,8 +340,6 @@ export function QuickLog() {
                       />
                     </div>
                   </div>
-
-                  {/* Body part selector */}
                   <div>
                     <p className="text-xs font-medium text-warm-500 mb-2">標記今天的身體部位</p>
                     <BodyPartSelector
@@ -313,27 +347,25 @@ export function QuickLog() {
                       onChange={parts => setLog(p => ({ ...p, bodyParts: parts }))}
                     />
                   </div>
-
-                  {/* Body note */}
                   <div>
-                    <p className="text-xs text-warm-400 mb-2">補充說明（最多 100 字）</p>
+                    <p className="text-xs text-warm-400 mb-2">補充說明</p>
                     <textarea
                       value={log.bodyNote}
                       onChange={e => setLog(p => ({ ...p, bodyNote: e.target.value }))}
-                      placeholder="今天身體有什麼特別的感受？有哪裡特別緊繃或放鬆？"
+                      placeholder="今天身體有什麼特別的感受？"
                       rows={3}
                       maxLength={100}
                       className="w-full px-4 py-3 rounded-2xl bg-cream-50 border border-cream-200 text-sm text-warm-600
-                        placeholder-warm-200 focus:outline-none focus:border-sage-300 resize-none leading-relaxed"
+                        placeholder-warm-200 focus:outline-none focus:border-sage-200 resize-none leading-relaxed"
                     />
                     <p className="text-right text-xs text-warm-300 mt-1">{(log.bodyNote || '').length}/100</p>
                   </div>
                 </div>
               )}
 
+              {/* ── EMOTIONS ── */}
               {section.id === 'emotions' && (
                 <div className="space-y-4">
-                  {/* Preset emotion tags */}
                   <div>
                     <p className="text-xs text-warm-400 mb-2">今天的情緒（可多選）</p>
                     <div className="flex flex-wrap gap-2">
@@ -341,7 +373,6 @@ export function QuickLog() {
                         <TagButton
                           key={e.id}
                           label={e.label}
-                          icon={e.icon}
                           selected={log.emotions?.includes(e.id)}
                           onClick={() => toggle('emotions', e.id)}
                           size="sm"
@@ -356,10 +387,8 @@ export function QuickLog() {
                       />
                     </div>
                   </div>
-
-                  {/* Emotion note */}
                   <div>
-                    <p className="text-xs text-warm-400 mb-2">情緒補充說明（最多 100 字）</p>
+                    <p className="text-xs text-warm-400 mb-2">情緒補充說明</p>
                     <textarea
                       value={log.emotionNote}
                       onChange={e => setLog(p => ({ ...p, emotionNote: e.target.value }))}
@@ -367,13 +396,14 @@ export function QuickLog() {
                       rows={3}
                       maxLength={100}
                       className="w-full px-4 py-3 rounded-2xl bg-cream-50 border border-cream-200 text-sm text-warm-600
-                        placeholder-warm-200 focus:outline-none focus:border-sage-300 resize-none leading-relaxed"
+                        placeholder-warm-200 focus:outline-none focus:border-sage-200 resize-none leading-relaxed"
                     />
                     <p className="text-right text-xs text-warm-300 mt-1">{(log.emotionNote || '').length}/100</p>
                   </div>
                 </div>
               )}
 
+              {/* ── COMPLETION & ENERGY ── */}
               {section.id === 'completion' && (
                 <div className="space-y-5">
                   <CompletionSlider
@@ -383,16 +413,17 @@ export function QuickLog() {
                   <EnergyPicker
                     value={log.energyBefore!}
                     onChange={v => setLog(p => ({ ...p, energyBefore: v }))}
-                    label="練習前的能量狀態"
+                    label="練習前的能量"
                   />
                   <EnergyPicker
                     value={log.energyAfter!}
                     onChange={v => setLog(p => ({ ...p, energyAfter: v }))}
-                    label="練習後的能量狀態"
+                    label="練習後的能量"
                   />
                 </div>
               )}
 
+              {/* ── NOTE ── */}
               {section.id === 'note' && (
                 <div>
                   <textarea
@@ -401,11 +432,11 @@ export function QuickLog() {
                     placeholder="今天的練習有什麼感覺，或是想對自己說的話，都可以留在這裡。"
                     rows={5}
                     className="w-full px-4 py-3 rounded-2xl bg-cream-50 border border-cream-200 text-sm text-warm-600
-                      placeholder-warm-200 focus:outline-none focus:border-sage-300 focus:ring-2 focus:ring-sage-50
+                      placeholder-warm-200 focus:outline-none focus:border-sage-200
                       resize-none leading-relaxed"
                   />
                   <p className="text-xs text-warm-300 mt-2 leading-relaxed">
-                    💌 這是給未來的你看的紀錄，不需要寫得很好，只要寫得真實。
+                    這是給未來的你看的紀錄，不需要寫得很好，只要寫得真實。
                   </p>
                 </div>
               )}
@@ -417,7 +448,7 @@ export function QuickLog() {
       {/* Sticky bottom CTA */}
       <div
         className="fixed bottom-0 left-0 right-0 z-40 bg-cream-100/95 backdrop-blur-sm border-t border-cream-200 p-4"
-        style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 1rem)' }}
+        style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 1rem)' }}
       >
         <div className="flex items-center gap-3">
           <div className="flex-1 text-left">
@@ -435,11 +466,12 @@ export function QuickLog() {
             disabled={!isValid || isSaving}
             className="shadow-soft-xl px-8"
           >
-            {isSaving ? (
-              <motion.span animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}>
-                🌸
-              </motion.span>
-            ) : '🌸'}
+            {isSaving && (
+              <motion.svg animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
+                <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4" />
+              </motion.svg>
+            )}
             完成紀錄
           </Button>
         </div>
@@ -448,54 +480,57 @@ export function QuickLog() {
   )
 }
 
+/* ─── LogSection ──────────────────────────────────────────────────── */
+
 function LogSection({
-  section,
-  isOpen,
-  onToggle,
-  children,
-  delay,
-  completedCount,
+  section, isOpen, onToggle, children, delay, completedCount, index,
 }: {
-  section: { id: string; label: string; emoji: string; hint: string }
+  section: { id: string; label: string; hint: string }
   isOpen: boolean
   onToggle: () => void
   children: React.ReactNode
   delay: number
   completedCount: number
+  index: number
 }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12 }}
+      initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.35, delay }}
-      className="bg-white/70 backdrop-blur-sm rounded-3xl border border-white/80 shadow-soft overflow-hidden"
+      transition={{ duration: 0.3, delay }}
+      className="bg-white/80 backdrop-blur-sm rounded-3xl border border-cream-200/60 shadow-soft overflow-hidden"
     >
       <button
         onClick={onToggle}
-        className="w-full flex items-center justify-between px-5 py-4 text-left min-h-[60px]"
+        className="w-full flex items-center justify-between px-4 py-3.5 text-left min-h-[56px]"
       >
         <div className="flex items-center gap-3 flex-1 min-w-0">
-          <span className="text-xl flex-shrink-0">{section.emoji}</span>
+          <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 text-[11px] font-bold transition-colors
+            ${completedCount > 0 ? 'bg-sage-300 text-white' : 'bg-cream-200 text-warm-300'}`}>
+            {completedCount > 0 ? '✓' : index + 1}
+          </div>
           <div className="min-w-0">
-            <p className="font-medium text-warm-600 text-sm leading-tight">{section.label}</p>
+            <p className="font-semibold text-warm-600 text-[13px] leading-tight">{section.label}</p>
             {!isOpen && (
-              <p className="text-xs text-warm-300 leading-tight mt-0.5">{section.hint}</p>
+              <p className="text-[11px] text-warm-300 leading-tight mt-0.5">{section.hint}</p>
             )}
           </div>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
           {completedCount > 0 && (
-            <span className="text-xs bg-sage-100 text-sage-500 rounded-full px-2 py-0.5 font-medium">
+            <span className="text-[11px] bg-sage-50 text-sage-400 rounded-full px-2 py-0.5 font-medium">
               {completedCount}
             </span>
           )}
-          <motion.span
+          <motion.div
             animate={{ rotate: isOpen ? 180 : 0 }}
             transition={{ duration: 0.2 }}
-            className="text-warm-300 text-sm"
+            className="text-warm-300"
           >
-            ▼
-          </motion.span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+              <path d="M6 9l6 6 6-6" />
+            </svg>
+          </motion.div>
         </div>
       </button>
 
@@ -505,7 +540,7 @@ function LogSection({
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
+            transition={{ duration: 0.28, ease: [0.25, 0.46, 0.45, 0.94] }}
             className="overflow-hidden"
           >
             <div className="px-5 pb-5 pt-1">
@@ -515,5 +550,35 @@ function LogSection({
         )}
       </AnimatePresence>
     </motion.div>
+  )
+}
+
+/* ─── CustomTextInput ─────────────────────────────────────────────── */
+
+function CustomTextInput({
+  placeholder,
+  value,
+  onChange,
+  suffix,
+  type = 'text',
+}: {
+  placeholder: string
+  value: string
+  onChange: (v: string) => void
+  suffix?: string
+  type?: string
+}) {
+  return (
+    <div className="flex items-center gap-2">
+      <input
+        type={type}
+        placeholder={placeholder}
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        className="flex-1 px-4 py-2.5 rounded-2xl bg-cream-50 border border-cream-200 text-sm text-warm-500 placeholder-warm-200
+          focus:outline-none focus:border-sage-200 min-h-[44px]"
+      />
+      {suffix && <span className="text-sm text-warm-300 flex-shrink-0">{suffix}</span>}
+    </div>
   )
 }

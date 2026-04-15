@@ -8,7 +8,7 @@ const LABELS = [
   { range: [26, 50], label: '一半' },
   { range: [51, 75], label: '大部分' },
   { range: [76, 99], label: '幾乎完成' },
-  { range: [100, 100], label: '完整完成 ✨' },
+  { range: [100, 100], label: '完整完成' },
 ]
 
 function getLabel(v: number) {

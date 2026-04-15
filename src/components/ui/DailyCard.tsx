@@ -1,298 +1,319 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getTodayCard } from '../../data/cards'
+import { motion } from 'framer-motion'
+import { BODY_STATES, MIND_STATES, getCard } from '../../data/cards'
 
-const FLIP_KEY = 'yoga_bloom_card_flipped'
+const STORAGE_KEY = 'yoga_bloom_daily_card'
 
 function getTodayKey() {
   return new Date().toISOString().slice(0, 10)
 }
 
-function wasFlippedToday(): boolean {
+interface StoredData {
+  date: string
+  bodyIndex?: number
+  mindIndex?: number
+  flipped?: boolean
+  variant?: number
+}
+
+function loadToday(): StoredData | null {
   try {
-    const raw = localStorage.getItem(FLIP_KEY)
-    if (!raw) return false
-    const { date } = JSON.parse(raw)
-    return date === getTodayKey()
+    const raw = localStorage.getItem(STORAGE_KEY)
+    if (!raw) return null
+    const parsed = JSON.parse(raw) as StoredData
+    if (parsed.date !== getTodayKey()) return null
+    return parsed
   } catch {
-    return false
+    return null
   }
 }
 
-function markFlippedToday() {
-  localStorage.setItem(FLIP_KEY, JSON.stringify({ date: getTodayKey() }))
+function saveToday(patch: Partial<StoredData>) {
+  const base: StoredData = loadToday() ?? { date: getTodayKey() }
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...base, ...patch }))
 }
 
-// ── colour palette per card colour ──────────────────────────────────────────
-const PALETTE = {
-  sage: {
-    frontGrad: 'linear-gradient(145deg, #EEF5EE 0%, #D8EAD8 60%, #C5DFC5 100%)',
-    backGrad:  'linear-gradient(145deg, #F4F9F4 0%, #E3EFE3 100%)',
-    orb1: '#8FAF8F22',
-    orb2: '#B5CFB522',
-    label: '#6B9A6B',
-    quote: '#3D6B3D',
-    body:  '#5A7A5A',
-    btn:   'linear-gradient(135deg, #8FAF8F, #6B9A6B)',
-    btnShadow: '#8FAF8F55',
-    divider: '#C5DFC5',
-    shimmer: '#FFFFFF33',
-  },
-  blush: {
-    frontGrad: 'linear-gradient(145deg, #FDF0F2 0%, #F5D5DA 60%, #EDB0B8 100%)',
-    backGrad:  'linear-gradient(145deg, #FEF5F6 0%, #F9E4E7 100%)',
-    orb1: '#EDB0B822',
-    orb2: '#F5D5DA22',
-    label: '#C07080',
-    quote: '#8B3D4D',
-    body:  '#A05060',
-    btn:   'linear-gradient(135deg, #EDB0B8, #C07080)',
-    btnShadow: '#EDB0B855',
-    divider: '#F5D5DA',
-    shimmer: '#FFFFFF33',
-  },
-  beige: {
-    frontGrad: 'linear-gradient(145deg, #FAF5EE 0%, #EDD5B8 60%, #D4B896 100%)',
-    backGrad:  'linear-gradient(145deg, #FCF8F2 0%, #F2E6D2 100%)',
-    orb1: '#D4B89622',
-    orb2: '#EDD5B822',
-    label: '#A07040',
-    quote: '#6B4820',
-    body:  '#8B6035',
-    btn:   'linear-gradient(135deg, #D4B896, #A07040)',
-    btnShadow: '#D4B89655',
-    divider: '#EDD5B8',
-    shimmer: '#FFFFFF33',
-  },
-} as const
+const P = {
+  cardBack:   'linear-gradient(150deg, #EDF5ED 0%, #E0EEE0 100%)',
+  cardFront:  'linear-gradient(150deg, #F8F5F0 0%, #EEE8DF 100%)',
+  accent:     '#8FAF8F',
+  accentFaint:'#8FAF8F14',
+  label:      '#9A8070',
+  title:      '#3A2820',
+  body:       '#5A4038',
+  divider:    '#DDD5C8',
+  pillActive:    '#8FAF8F',
+  pillActiveBg:  '#F0F7F0',
+  pillInactive:  '#BEB0A0',
+  pillBorder:    '#E0D8CC',
+}
 
-const THEME_LABELS: Record<string, string> = {
-  grounding: '扎根',
-  openness:  '開放',
-  strength:  '力量',
-  rest:      '休息',
-  awareness: '覺察',
-  joy:       '喜悅',
-  release:   '釋放',
-  flow:      '流動',
-  gratitude: '感恩',
-  presence:  '當下',
+const shell: React.CSSProperties = {
+  position: 'absolute',
+  inset: 0,
+  borderRadius: 22,
+  overflow: 'hidden',
+  boxShadow: '0 4px 24px rgba(0,0,0,0.07), 0 1px 4px rgba(0,0,0,0.03)',
+  border: '1px solid rgba(255,255,255,0.75)',
+  backfaceVisibility: 'hidden',
+  WebkitBackfaceVisibility: 'hidden' as React.CSSProperties['backfaceVisibility'],
 }
 
 export function DailyCard() {
-  const card = getTodayCard()
-  const p = PALETTE[card.color]
   const navigate = useNavigate()
-
-  const [flipped, setFlipped] = useState(wasFlippedToday)
-  const [animating, setAnimating] = useState(false)
+  const [bodyIndex, setBodyIndex] = useState<number | null>(null)
+  const [mindIndex, setMindIndex] = useState<number | null>(null)
+  const [flipped, setFlipped]     = useState(false)
+  const [flipping, setFlipping]   = useState(false)
+  const [variant, setVariant]     = useState(0)
 
   useEffect(() => {
-    // Sync flip state if card changes at midnight
-    setFlipped(wasFlippedToday())
-  }, [card.id])
+    const s = loadToday()
+    if (!s) return
+    if (s.bodyIndex !== undefined) setBodyIndex(s.bodyIndex)
+    if (s.mindIndex !== undefined) setMindIndex(s.mindIndex)
+    if (s.flipped && s.variant !== undefined) {
+      setVariant(s.variant)
+      setFlipped(true)
+    }
+  }, [])
+
+  function handleBodySelect(i: number) {
+    if (flipped) return
+    setBodyIndex(i)
+    saveToday({ bodyIndex: i })
+  }
+  function handleMindSelect(i: number) {
+    if (flipped) return
+    setMindIndex(i)
+    saveToday({ mindIndex: i })
+  }
 
   function handleFlip() {
-    if (flipped || animating) return
-    setAnimating(true)
+    if (bodyIndex === null || mindIndex === null || flipping || flipped) return
+    setFlipping(true)
+    const v = Math.floor(Math.random() * 3)
+    saveToday({ variant: v, flipped: true })
     setTimeout(() => {
+      setVariant(v)
       setFlipped(true)
-      markFlippedToday()
-      setAnimating(false)
-    }, 350) // halfway through the flip
+      setFlipping(false)
+    }, 380)
   }
 
-  function handleCta(e: React.MouseEvent) {
-    e.stopPropagation()
-    const routes: Record<string, string> = {
-      breathing: '/breathing',
-      log: '/log',
-      insights: '/insights',
-    }
-    navigate(routes[card.ctaTarget] ?? '/log')
-  }
+  const card = (flipped && bodyIndex !== null && mindIndex !== null)
+    ? getCard(bodyIndex as 0|1|2|3|4, mindIndex as 0|1|2|3|4, variant)
+    : null
 
-  const today = new Date()
-  const dateLabel = today.toLocaleDateString('zh-TW', { month: 'long', day: 'numeric', weekday: 'short' })
+  const canFlip = bodyIndex !== null && mindIndex !== null
+  const dateLabel = new Date().toLocaleDateString('zh-TW', { month: 'long', day: 'numeric', weekday: 'short' })
+  const CARD_H = flipped ? 308 : 172
 
   return (
-    <div style={{ perspective: '1200px' }}>
-      <div
-        onClick={!flipped ? handleFlip : undefined}
-        style={{
-          position: 'relative',
-          height: '420px',
-          transformStyle: 'preserve-3d',
-          transition: 'transform 0.7s cubic-bezier(0.4, 0, 0.2, 1)',
-          transform: flipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
-          cursor: flipped ? 'default' : 'pointer',
-        }}
-      >
-        {/* ── FRONT ─────────────────────────────────────────────────────── */}
+    <div>
+      {/* ── 3D flip card ─────────────────────────────── */}
+      <div style={{ perspective: '1100px' }}>
         <div
+          onClick={!flipped && canFlip ? handleFlip : undefined}
           style={{
-            position: 'absolute',
-            inset: 0,
-            backfaceVisibility: 'hidden',
-            WebkitBackfaceVisibility: 'hidden',
-            borderRadius: '24px',
-            background: p.frontGrad,
-            overflow: 'hidden',
+            position: 'relative',
+            height: CARD_H,
+            transition: 'height 0.4s cubic-bezier(0.4,0,0.2,1)',
+            transformStyle: 'preserve-3d',
+            cursor: (!flipped && canFlip) ? 'pointer' : 'default',
+          }}
+        >
+          {/* ── DECORATIVE BACK (before flip) ───────── */}
+          <div style={{
+            ...shell,
+            background: P.cardBack,
+            transform: flipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
+            transition: 'transform 0.65s cubic-bezier(0.4,0,0.2,1)',
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'space-between',
-            padding: '28px 24px 24px',
-            boxShadow: '0 8px 32px rgba(0,0,0,0.08), 0 2px 8px rgba(0,0,0,0.04)',
-          }}
-        >
-          {/* Decorative orbs */}
-          <div style={{ position: 'absolute', top: -40, right: -40, width: 160, height: 160, borderRadius: '50%', background: p.orb1, filter: 'blur(20px)' }} />
-          <div style={{ position: 'absolute', bottom: -20, left: -30, width: 120, height: 120, borderRadius: '50%', background: p.orb2, filter: 'blur(16px)' }} />
-          {/* Shimmer line */}
-          <div style={{ position: 'absolute', top: 0, left: '15%', right: '15%', height: '1px', background: p.shimmer }} />
+            padding: '16px 20px 16px',
+          }}>
+            {/* Subtle glow */}
+            <div style={{ position: 'absolute', top: -20, right: -20, width: 80, height: 80, borderRadius: '50%', background: '#8FAF8F18', filter: 'blur(20px)', pointerEvents: 'none' }} />
 
-          {/* Top label */}
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, zIndex: 1 }}>
-            <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.12em', color: p.label, textTransform: 'uppercase', opacity: 0.8 }}>
-              今日意圖
-            </span>
-            <span style={{ fontSize: 11, color: p.label, opacity: 0.5, letterSpacing: '0.06em' }}>
-              {dateLabel}
-            </span>
-          </div>
-
-          {/* Centre emoji */}
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20, zIndex: 1 }}>
-            <div style={{
-              fontSize: 72,
-              lineHeight: 1,
-              filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.10))',
-              animation: 'cardFloat 3s ease-in-out infinite',
-            }}>
-              {card.emoji}
+            {/* Top label */}
+            <div style={{ textAlign: 'center', width: '100%', zIndex: 1 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div style={{ flex: 1, height: 1, background: P.accent + '30' }} />
+                <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.18em', color: P.accent, textTransform: 'uppercase' as const }}>今日意圖牌</p>
+                <div style={{ flex: 1, height: 1, background: P.accent + '30' }} />
+              </div>
+              <p style={{ fontSize: 11, color: P.label, opacity: 0.55, marginTop: 3 }}>{dateLabel}</p>
             </div>
-            <div style={{ textAlign: 'center' }}>
-              <p style={{ fontSize: 13, color: p.label, fontWeight: 500, marginBottom: 6 }}>
-                {THEME_LABELS[card.theme] ?? card.theme}
-              </p>
+
+            {/* Lotus */}
+            <LotusDecoration />
+
+            {/* Bottom hint */}
+            <div style={{ width: '100%', textAlign: 'center', zIndex: 1, minHeight: 24 }}>
+              {canFlip ? (
+                <motion.div
+                  animate={{ opacity: [0.65, 1, 0.65], y: [0, -2, 0] }}
+                  transition={{ repeat: Infinity, duration: 1.9, ease: 'easeInOut' }}
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}
+                >
+                  <span style={{ fontSize: 11.5, fontWeight: 700, color: P.accent, letterSpacing: '0.06em' }}>點擊翻開牌卡</span>
+                  <span style={{ fontSize: 14, color: P.accent, lineHeight: 1 }}>↓</span>
+                </motion.div>
+              ) : (
+                <p style={{ fontSize: 11, color: P.label, opacity: 0.38 }}>選擇狀態後翻開</p>
+              )}
             </div>
           </div>
 
-          {/* Bottom tap hint */}
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, zIndex: 1 }}>
-            <div style={{ width: 32, height: 1, background: p.divider }} />
-            <p style={{ fontSize: 12, color: p.label, opacity: 0.6, letterSpacing: '0.08em' }}>
-              點擊翻開
-            </p>
-            <span style={{ fontSize: 16, color: p.label, opacity: 0.5, animation: 'cardBob 1.5s ease-in-out infinite' }}>
-              ↓
-            </span>
-          </div>
-        </div>
-
-        {/* ── BACK ──────────────────────────────────────────────────────── */}
-        <div
-          style={{
-            position: 'absolute',
-            inset: 0,
-            backfaceVisibility: 'hidden',
-            WebkitBackfaceVisibility: 'hidden',
-            transform: 'rotateY(180deg)',
-            borderRadius: '24px',
-            background: p.backGrad,
-            overflow: 'hidden',
+          {/* ── CONTENT FACE (after flip) ────────────── */}
+          <div style={{
+            ...shell,
+            background: P.cardFront,
+            transform: flipped ? 'rotateY(0deg)' : 'rotateY(-180deg)',
+            transition: 'transform 0.65s cubic-bezier(0.4,0,0.2,1)',
             display: 'flex',
             flexDirection: 'column',
-            padding: '28px 24px 24px',
-            boxShadow: '0 8px 32px rgba(0,0,0,0.08), 0 2px 8px rgba(0,0,0,0.04)',
-          }}
-        >
-          {/* Decorative orbs */}
-          <div style={{ position: 'absolute', top: -40, left: -40, width: 140, height: 140, borderRadius: '50%', background: p.orb1, filter: 'blur(20px)' }} />
-          <div style={{ position: 'absolute', bottom: -20, right: -20, width: 100, height: 100, borderRadius: '50%', background: p.orb2, filter: 'blur(14px)' }} />
-          <div style={{ position: 'absolute', top: 0, left: '15%', right: '15%', height: '1px', background: p.shimmer }} />
-
-          {/* Theme badge */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20, zIndex: 1 }}>
-            <span style={{ fontSize: 20 }}>{card.emoji}</span>
-            <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.12em', color: p.label, textTransform: 'uppercase', opacity: 0.7 }}>
-              {THEME_LABELS[card.theme] ?? card.theme}
-            </span>
-          </div>
-
-          {/* Short quote — hero text */}
-          <p style={{
-            fontSize: 22,
-            fontWeight: 700,
-            color: p.quote,
-            lineHeight: 1.45,
-            marginBottom: 16,
-            zIndex: 1,
-            letterSpacing: '-0.01em',
+            padding: '20px 22px 18px',
           }}>
-            {card.shortQuote}
-          </p>
+            {/* Glow */}
+            <div style={{ position: 'absolute', bottom: -16, right: -16, width: 90, height: 90, borderRadius: '50%', background: P.accentFaint, filter: 'blur(18px)', pointerEvents: 'none' }} />
 
-          {/* Divider */}
-          <div style={{ height: 1, background: p.divider, marginBottom: 16, zIndex: 1 }} />
+            {/* State badges */}
+            {bodyIndex !== null && mindIndex !== null && (
+              <div style={{ display: 'flex', gap: 6, marginBottom: 12, zIndex: 1 }}>
+                <span style={{ fontSize: 10, fontWeight: 600, color: P.pillActive, background: P.pillActiveBg, border: `1px solid ${P.pillActive}40`, borderRadius: 20, padding: '3px 10px', letterSpacing: '0.04em' }}>
+                  {BODY_STATES[bodyIndex]}
+                </span>
+                <span style={{ fontSize: 10, fontWeight: 600, color: P.label, background: 'rgba(255,255,255,0.55)', border: `1px solid ${P.divider}`, borderRadius: 20, padding: '3px 10px', letterSpacing: '0.04em' }}>
+                  {MIND_STATES[mindIndex]}
+                </span>
+              </div>
+            )}
 
-          {/* Title + Guidance */}
-          <div style={{ flex: 1, zIndex: 1, overflow: 'hidden' }}>
-            <p style={{ fontSize: 14, fontWeight: 600, color: p.quote, marginBottom: 10, opacity: 0.85 }}>
-              {card.title}
+            {/* Card text */}
+            <p style={{ fontSize: 14.5, fontWeight: 600, color: P.title, lineHeight: 1.75, marginBottom: 12, zIndex: 1, flex: 1 }}>
+              {card?.text ?? ''}
             </p>
-            <p style={{
-              fontSize: 13.5,
-              color: p.body,
-              lineHeight: 1.75,
-              opacity: 0.9,
-            }}>
-              {card.longGuidance}
-            </p>
+
+            {/* Divider */}
+            <div style={{ height: 1, background: P.divider, marginBottom: 10, zIndex: 1 }} />
+
+            {/* Task */}
+            <div style={{ zIndex: 1, marginBottom: 14 }}>
+              <p style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: '0.15em', color: P.label, textTransform: 'uppercase' as const, marginBottom: 5 }}>今日行動</p>
+              <p style={{ fontSize: 12.5, color: P.body, lineHeight: 1.7 }}>{card?.task ?? ''}</p>
+            </div>
+
+            {/* CTA */}
+            <button
+              onClick={() => navigate('/log')}
+              style={{
+                width: '100%', padding: '11px 0', borderRadius: 14, border: 'none',
+                background: 'linear-gradient(135deg, #9FBF9F, #7A9F7A)', color: '#fff',
+                fontSize: 13, fontWeight: 600, letterSpacing: '0.05em',
+                cursor: 'pointer', boxShadow: '0 3px 14px rgba(143,175,143,0.35)',
+                zIndex: 1, position: 'relative', transition: 'transform 0.15s',
+              }}
+              onMouseDown={e => (e.currentTarget.style.transform = 'scale(0.97)')}
+              onMouseUp={e => (e.currentTarget.style.transform = 'scale(1)')}
+              onTouchStart={e => (e.currentTarget.style.transform = 'scale(0.97)')}
+              onTouchEnd={e => (e.currentTarget.style.transform = 'scale(1)')}
+            >
+              開始練習記錄 →
+            </button>
           </div>
-
-          {/* CTA button */}
-          <button
-            onClick={handleCta}
-            style={{
-              marginTop: 20,
-              width: '100%',
-              padding: '14px 0',
-              borderRadius: '16px',
-              border: 'none',
-              background: p.btn,
-              color: '#fff',
-              fontSize: 14,
-              fontWeight: 600,
-              letterSpacing: '0.04em',
-              cursor: 'pointer',
-              boxShadow: `0 4px 16px ${p.btnShadow}`,
-              zIndex: 1,
-              position: 'relative',
-              transition: 'opacity 0.15s, transform 0.15s',
-            }}
-            onMouseDown={e => (e.currentTarget.style.transform = 'scale(0.97)')}
-            onMouseUp={e => (e.currentTarget.style.transform = 'scale(1)')}
-            onTouchStart={e => (e.currentTarget.style.transform = 'scale(0.97)')}
-            onTouchEnd={e => (e.currentTarget.style.transform = 'scale(1)')}
-          >
-            {card.ctaLabel} →
-          </button>
         </div>
       </div>
 
-      {/* CSS keyframes injected once */}
-      <style>{`
-        @keyframes cardFloat {
-          0%, 100% { transform: translateY(0px); }
-          50%       { transform: translateY(-8px); }
-        }
-        @keyframes cardBob {
-          0%, 100% { transform: translateY(0px); opacity: 0.5; }
-          50%       { transform: translateY(4px); opacity: 0.9; }
-        }
-      `}</style>
+      {/* ── State selectors (only before flip) ───────── */}
+      {!flipped && (
+        <motion.div
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.12, duration: 0.3 }}
+          style={{ marginTop: 14 }}
+        >
+          {/* Body state */}
+          <div style={{ marginBottom: 10 }}>
+            <p style={{ fontSize: 11, fontWeight: 600, color: P.label, marginBottom: 7, letterSpacing: '0.04em' }}>身體狀態</p>
+            <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 6 }}>
+              {BODY_STATES.map((s, i) => (
+                <button
+                  key={i}
+                  onClick={() => handleBodySelect(i)}
+                  style={{
+                    padding: '5px 12px', borderRadius: 20, fontSize: 12,
+                    fontWeight: bodyIndex === i ? 600 : 400,
+                    color: bodyIndex === i ? P.pillActive : P.pillInactive,
+                    background: bodyIndex === i ? P.pillActiveBg : 'rgba(255,255,255,0.6)',
+                    border: `1px solid ${bodyIndex === i ? P.pillActive + '60' : P.pillBorder}`,
+                    cursor: 'pointer', transition: 'all 0.18s',
+                  }}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Mind state */}
+          <div>
+            <p style={{ fontSize: 11, fontWeight: 600, color: P.label, marginBottom: 7, letterSpacing: '0.04em' }}>心理狀態</p>
+            <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 6 }}>
+              {MIND_STATES.map((s, i) => (
+                <button
+                  key={i}
+                  onClick={() => handleMindSelect(i)}
+                  style={{
+                    padding: '5px 12px', borderRadius: 20, fontSize: 12,
+                    fontWeight: mindIndex === i ? 600 : 400,
+                    color: mindIndex === i ? P.pillActive : P.pillInactive,
+                    background: mindIndex === i ? P.pillActiveBg : 'rgba(255,255,255,0.6)',
+                    border: `1px solid ${mindIndex === i ? P.pillActive + '60' : P.pillBorder}`,
+                    cursor: 'pointer', transition: 'all 0.18s',
+                  }}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          </div>
+        </motion.div>
+      )}
     </div>
+  )
+}
+
+/* ── Lotus decoration SVG ──────────────────────────────────────── */
+function LotusDecoration() {
+  return (
+    <svg width="68" height="68" viewBox="0 0 68 68" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ opacity: 0.72 }}>
+      {/* Outer petals */}
+      {[0, 45, 90, 135, 22.5, 67.5, 112.5, 157.5].map((angle, i) => (
+        <ellipse key={i}
+          cx="34" cy="34" rx="7" ry="20"
+          fill="#8FAF8F"
+          opacity={i < 4 ? 0.18 : 0.11}
+          transform={`rotate(${angle}, 34, 34)`}
+        />
+      ))}
+      {/* Inner petals */}
+      {[0, 60, 120, 30, 90, 150].map((angle, i) => (
+        <ellipse key={'i'+i}
+          cx="34" cy="34" rx="4.5" ry="12"
+          fill="#8FAF8F"
+          opacity={i < 3 ? 0.28 : 0.18}
+          transform={`rotate(${angle}, 34, 34)`}
+        />
+      ))}
+      {/* Center */}
+      <circle cx="34" cy="34" r="6.5" fill="#8FAF8F" opacity="0.22" />
+      <circle cx="34" cy="34" r="3.5" fill="#8FAF8F" opacity="0.45" />
+      <circle cx="34" cy="34" r="1.5" fill="#8FAF8F" opacity="0.7" />
+    </svg>
   )
 }

@@ -114,32 +114,19 @@ export interface MonthlyTheme {
 
 // ─── Daily Intention Cards ─────────────────────────────────────────────────
 
-export type CardTheme =
-  | 'grounding'
-  | 'openness'
-  | 'strength'
-  | 'rest'
-  | 'awareness'
-  | 'joy'
-  | 'release'
-  | 'flow'
-  | 'gratitude'
-  | 'presence'
+export type BodyStateIndex = 0 | 1 | 2 | 3 | 4
+export type MindStateIndex = 0 | 1 | 2 | 3 | 4
 
-export type CardColor = 'sage' | 'blush' | 'beige'
+export interface StateCard {
+  text: string
+  task: string
+}
 
-export type CardCtaTarget = 'breathing' | 'log' | 'insights'
-
-export interface IntentionCard {
-  id: number
-  theme: CardTheme
-  title: string           // main heading on back of card
-  shortQuote: string      // short poetic line shown prominently
-  longGuidance: string    // longer guidance paragraph
-  emoji: string
-  color: CardColor
-  ctaLabel: string
-  ctaTarget: CardCtaTarget
+export interface DailyCardSelection {
+  date: string
+  bodyIndex: BodyStateIndex
+  mindIndex: MindStateIndex
+  variant: number        // 0 | 1 | 2
 }
 
 // ─── Breathing ────────────────────────────────────────────────────────────

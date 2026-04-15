@@ -3,45 +3,35 @@ import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { AvatarDisplay } from '../components/avatar/AvatarDisplay'
 import { Card } from '../components/ui/Card'
-import { Button } from '../components/ui/Button'
 import { DailyCard } from '../components/ui/DailyCard'
 import { PageTransition, StaggerContainer, StaggerItem } from '../components/ui/PageTransition'
 import { useAppStore } from '../store/useAppStore'
 import { useLogStore } from '../store/useLogStore'
 import { getStageInfo, calculateStreak } from '../utils/xp'
 import { getWeeklyStats, getMonthlyStats } from '../utils/insights'
-import { getTimeOfDay, formatDuration } from '../utils/date'
+import { getTimeOfDay } from '../utils/date'
 import { GREETING_MESSAGES, DAILY_SUGGESTIONS } from '../data/messages'
 import { STAGES } from '../data/avatars'
 import type { SpecialStateType } from '../types'
 
-const SPECIAL_STATE_LABELS: Record<SpecialStateType, { label: string; emoji: string; color: string }> = {
-  menstrual: { label: '生理期', emoji: '🌸', color: 'bg-blush-50 text-blush-500 border-blush-200' },
-  cold:      { label: '感冒中', emoji: '🤧', color: 'bg-beige-50 text-beige-600 border-beige-200' },
-  fatigue:   { label: '疲勞',   emoji: '😴', color: 'bg-cream-100 text-warm-400 border-cream-300' },
-  poor_sleep:{ label: '睡眠不足', emoji: '🌙', color: 'bg-cream-100 text-warm-400 border-cream-300' },
+const SPECIAL_STATE_LABELS: Record<SpecialStateType, { label: string; emoji: string; active: string }> = {
+  menstrual:  { label: '生理期',   emoji: '🌸', active: 'bg-blush-50 text-blush-500 border-blush-200' },
+  cold:       { label: '感冒中',   emoji: '🤧', active: 'bg-beige-50 text-beige-600 border-beige-200' },
+  fatigue:    { label: '疲勞',     emoji: '😴', active: 'bg-warm-50 text-warm-500 border-warm-200' },
+  poor_sleep: { label: '睡眠不足', emoji: '🌙', active: 'bg-warm-50 text-warm-500 border-warm-200' },
 }
-
-const ALL_SPECIAL_STATES: SpecialStateType[] = ['menstrual', 'cold', 'fatigue', 'poor_sleep']
+const ALL_STATES: SpecialStateType[] = ['menstrual', 'cold', 'fatigue', 'poor_sleep']
 
 function getGreeting(name: string): string {
-  const tod = getTimeOfDay()
-  const msgs = GREETING_MESSAGES[tod]
-  const prefix = msgs[Math.floor(Math.random() * msgs.length)]
-  return `${prefix}${name || '練習者'}`
+  const msgs = GREETING_MESSAGES[getTimeOfDay()]
+  return msgs[Math.floor(Math.random() * msgs.length)] + (name || '練習者')
 }
 
-function getDailySuggestion(streak: number, daysSinceLastLog: number): string {
-  let category = 'afternoon'
-  const tod = getTimeOfDay()
-  if (tod === 'morning') category = 'morning'
-  else if (tod === 'evening' || tod === 'night') category = 'evening'
-
-  if (daysSinceLastLog >= 7) category = 'return'
-  else if (streak >= 3) category = 'streak'
-
-  const set = DAILY_SUGGESTIONS.find(s => s.condition === category)
-    ?? DAILY_SUGGESTIONS[1]
+function getSuggestion(streak: number, daysSince: number): string {
+  let cat = getTimeOfDay() === 'morning' ? 'morning' : (getTimeOfDay() === 'evening' || getTimeOfDay() === 'night') ? 'evening' : 'afternoon'
+  if (daysSince >= 7) cat = 'return'
+  else if (streak >= 3) cat = 'streak'
+  const set = DAILY_SUGGESTIONS.find(s => s.condition === cat) ?? DAILY_SUGGESTIONS[1]
   return set.messages[Math.floor(Math.random() * set.messages.length)]
 }
 
@@ -49,132 +39,109 @@ export function Home() {
   const navigate = useNavigate()
   const { settings, avatarState, loadAvatarState, todaySpecialState, loadTodaySpecialState, setTodaySpecialState, clearTodaySpecialState } = useAppStore()
   const { logs, loadLogs } = useLogStore()
-  const [showStatePanel, setShowStatePanel] = useState(false)
-
   const today = new Date().toISOString().slice(0, 10)
 
-  useEffect(() => {
-    loadAvatarState()
-    loadLogs()
-    loadTodaySpecialState(today)
-  }, [])
+  useEffect(() => { loadAvatarState(); loadLogs(); loadTodaySpecialState(today) }, [])
 
   const { stage, next, progress } = getStageInfo(avatarState.xp)
   const stageDef = STAGES.find(s => s.id === stage.id)!
-  const streak = calculateStreak(logs)
-  const weekly = getWeeklyStats(logs)
-  const monthly = getMonthlyStats(logs)
-
-  const lastLogDate = logs[0]?.date
-  const daysSinceLast = lastLogDate
-    ? Math.round((Date.now() - new Date(lastLogDate + 'T00:00:00').getTime()) / 86400000)
+  const streak    = calculateStreak(logs)
+  // Estimate days to next stage (~12 XP per practice day)
+  const daysToNext = next ? Math.ceil((next.minXp - avatarState.xp) / 12) : 0
+  const weekly    = getWeeklyStats(logs)
+  const monthly   = getMonthlyStats(logs)
+  const daysSince = logs[0]?.date
+    ? Math.round((Date.now() - new Date(logs[0].date + 'T00:00:00').getTime()) / 86400000)
     : 999
 
-  const greeting = getGreeting(settings.nickname)
-  const suggestion = getDailySuggestion(streak, daysSinceLast)
-
   return (
-    <PageTransition className="min-h-screen bg-cream-100 pb-24">
-      {/* Subtle background accent */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-16 -right-16 w-64 h-64 rounded-full bg-sage-50 opacity-50" />
+    <PageTransition className="min-h-screen bg-cream-100 pb-28">
+      {/* Very subtle background accent */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden>
+        <div className="absolute -top-20 -right-20 w-72 h-72 rounded-full bg-sage-50 opacity-40" />
       </div>
 
-      <div className="relative px-5 pt-safe">
-        {/* Header */}
-        <div className="pt-8 pb-2">
-          <motion.p
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-warm-400 text-sm"
-          >
-            {new Date().toLocaleDateString('zh-TW', { month: 'long', day: 'numeric', weekday: 'long' })}
-          </motion.p>
-          <motion.h1
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
+      <div className="relative px-4 pt-safe">
+
+        {/* ── PAGE HEADER ─────────────────────────────────────── */}
+        <div className="pt-8 pb-4 flex items-start justify-between">
+          <div>
+            <p className="text-xs text-warm-300 mb-1 tracking-wide">
+              {new Date().toLocaleDateString('zh-TW', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' })}
+            </p>
+            <motion.h1
+              initial={{ opacity: 0, y: -6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.05 }}
+              className="text-[19px] font-display font-semibold text-warm-700 leading-snug"
+            >
+              {getGreeting(settings.nickname)}
+            </motion.h1>
+          </div>
+          {/* Avatar badge */}
+          <motion.button
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.1 }}
-            className="text-xl font-display font-semibold text-warm-600 mt-1"
+            onClick={() => navigate('/settings')}
+            className="relative flex-shrink-0 mt-1"
           >
-            {greeting}
-          </motion.h1>
+            <AvatarDisplay avatarId={settings.avatar} size={48} idle />
+            <div className="absolute -bottom-0.5 -right-0.5 bg-sage-400 text-white text-[9px] px-1.5 py-0.5 rounded-full font-semibold leading-none">
+              {stageDef.name}
+            </div>
+          </motion.button>
         </div>
 
-        {/* Avatar + XP card */}
-        <Card animate className="mt-4 p-5" delay={0.1}>
-          <div className="flex items-center gap-4">
-            <div className="relative flex-shrink-0">
-              <AvatarDisplay avatarId={settings.avatar} size={72} idle />
-              <div className="absolute -bottom-1 -right-1 bg-sage-400 text-white text-[10px] px-2 py-0.5 rounded-full font-medium">
-                {stageDef.name}
-              </div>
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex justify-between items-baseline mb-2">
-                <span className="text-sm font-semibold text-warm-600">{settings.nickname || '練習者'}</span>
-                <span className="text-xs text-warm-300">{avatarState.xp} XP</span>
-              </div>
-              <div className="h-2 bg-cream-200 rounded-full overflow-hidden">
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: `${progress}%` }}
-                  transition={{ duration: 1, delay: 0.5, ease: 'easeOut' }}
-                  className="h-full rounded-full bg-gradient-to-r from-sage-300 to-sage-400"
-                />
-              </div>
-              <div className="flex justify-between mt-1.5">
-                <span className="text-[10px] text-warm-300">{stage.name}</span>
-                {next && <span className="text-[10px] text-warm-300">下一階段 {next.minXp} XP</span>}
-              </div>
-            </div>
-          </div>
-        </Card>
-
-        {/* Daily intention card */}
-        <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="mt-3"
-        >
-          <DailyCard />
-        </motion.div>
-
-        {/* Special state chips */}
+        {/* ── XP BAR ──────────────────────────────────────────── */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.25 }}
-          className="mt-3"
+          transition={{ delay: 0.15 }}
+          className="mb-4"
         >
+          <div className="flex justify-between items-center mb-1.5">
+            <span className="text-[11px] text-warm-400">{stage.name}</span>
+            <span className="text-[11px] text-warm-300">
+              {avatarState.xp} XP
+              {next ? ` · 還需 ${daysToNext} 天升階` : ' · 已達最高段位'}
+            </span>
+          </div>
+          <div className="h-1.5 bg-cream-200 rounded-full overflow-hidden">
+            <motion.div
+              initial={{ width: 0 }}
+              animate={{ width: `${progress}%` }}
+              transition={{ duration: 1, delay: 0.4, ease: 'easeOut' }}
+              className="h-full rounded-full bg-gradient-to-r from-sage-300 to-sage-400"
+            />
+          </div>
+        </motion.div>
+
+        {/* ── DAILY CARD ──────────────────────────────────────── */}
+        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.18 }}>
+          <DailyCard />
+        </motion.div>
+
+        {/* ── SPECIAL STATES ──────────────────────────────────── */}
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.22 }} className="mt-3">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-xs text-warm-300">今日狀態</span>
-            {ALL_SPECIAL_STATES.map(s => {
+            <span className="text-[11px] text-warm-300 mr-0.5">今日狀態</span>
+            {ALL_STATES.map(s => {
               const info = SPECIAL_STATE_LABELS[s]
-              const active = todaySpecialState?.states.includes(s)
+              const isActive = todaySpecialState?.states.includes(s)
               return (
                 <button
                   key={s}
                   onClick={async () => {
-                    const currentStates = todaySpecialState?.states ?? []
-                    const next = active
-                      ? currentStates.filter(x => x !== s)
-                      : [...currentStates, s]
-                    if (next.length === 0) {
-                      await clearTodaySpecialState(today)
-                    } else {
-                      await setTodaySpecialState({
-                        date: today,
-                        states: next,
-                        note: todaySpecialState?.note ?? '',
-                        updatedAt: new Date().toISOString(),
-                      })
-                    }
+                    const cur = todaySpecialState?.states ?? []
+                    const next = isActive ? cur.filter(x => x !== s) : [...cur, s]
+                    if (next.length === 0) await clearTodaySpecialState(today)
+                    else await setTodaySpecialState({ date: today, states: next, note: todaySpecialState?.note ?? '', updatedAt: new Date().toISOString() })
                   }}
-                  className={`flex items-center gap-1 px-2.5 py-1 rounded-full border text-xs transition-all duration-200
-                    ${active ? info.color : 'bg-white text-warm-300 border-cream-200'}`}
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded-full border text-xs font-medium transition-all duration-200
+                    ${isActive ? info.active : 'bg-white/70 text-warm-300 border-cream-200'}`}
                 >
-                  <span>{info.emoji}</span>
+                  <span className="text-[13px]">{info.emoji}</span>
                   <span>{info.label}</span>
                 </button>
               )
@@ -182,60 +149,42 @@ export function Home() {
           </div>
         </motion.div>
 
-        {/* Daily suggestion */}
-        <Card animate className="mt-3 p-4" delay={0.3}>
-          <div className="flex gap-3 items-start">
-            <div className="w-0.5 self-stretch bg-sage-200 rounded-full flex-shrink-0" />
-            <div>
-              <p className="text-xs text-warm-300 mb-1">今日提示</p>
-              <p className="text-sm text-warm-500 leading-relaxed">{suggestion}</p>
-            </div>
-          </div>
-        </Card>
-
-        {/* Stats row */}
-        <StaggerContainer className="grid grid-cols-3 gap-3 mt-3">
-          <StaggerItem>
-            <Card className="p-3 text-center">
-              <p className="text-2xl font-display font-semibold text-sage-500">{streak}</p>
-              <p className="text-xs text-warm-300 mt-0.5">連續天數</p>
-            </Card>
-          </StaggerItem>
-          <StaggerItem>
-            <Card className="p-3 text-center">
-              <p className="text-2xl font-display font-semibold text-blush-400">{weekly.count}</p>
-              <p className="text-xs text-warm-300 mt-0.5">本週練習</p>
-            </Card>
-          </StaggerItem>
-          <StaggerItem>
-            <Card className="p-3 text-center">
-              <p className="text-lg font-display font-semibold text-beige-400">{formatDuration(monthly.minutes)}</p>
-              <p className="text-xs text-warm-300 mt-0.5">本月時間</p>
-            </Card>
-          </StaggerItem>
+        {/* ── STATS ROW ───────────────────────────────────────── */}
+        <StaggerContainer className="grid grid-cols-3 gap-2.5 mt-4">
+          {([
+            { value: String(streak),          unit: '天',  label: '連續天數', color: 'text-sage-500' },
+            { value: String(weekly.count),    unit: '次',  label: '本週練習', color: 'text-blush-400' },
+            { value: String(monthly.minutes), unit: '分',  label: '本月時間', color: 'text-beige-500' },
+          ] as const).map(({ value, unit, label, color }) => (
+            <StaggerItem key={label}>
+              <Card className="p-3 text-center">
+                <p className={`text-xl font-display font-bold leading-none ${color}`}>
+                  {value}<span className="text-sm font-medium ml-0.5">{unit}</span>
+                </p>
+                <p className="text-[10px] text-warm-300 mt-1.5">{label}</p>
+              </Card>
+            </StaggerItem>
+          ))}
         </StaggerContainer>
 
-        {/* Weekly mini calendar */}
-        <Card animate className="mt-3 p-4" delay={0.35}>
-          <p className="text-xs text-warm-400 mb-3">本週練習</p>
+        {/* ── WEEKLY CALENDAR ─────────────────────────────────── */}
+        <Card animate className="mt-2.5 p-4" delay={0.28}>
+          <p className="text-[11px] font-medium text-warm-400 mb-3">本週記錄</p>
           <div className="flex justify-between">
             {Array.from({ length: 7 }, (_, i) => {
               const d = new Date(Date.now() - (6 - i) * 86400000)
-              const dateStr = d.toISOString().split('T')[0]
-              const hasLog = logs.some(l => l.date === dateStr)
+              const hasLog = logs.some(l => l.date === d.toISOString().split('T')[0])
               const isToday = i === 6
-              const weekdays = ['日', '一', '二', '三', '四', '五', '六']
               return (
-                <div key={i} className="flex flex-col items-center gap-1">
-                  <span className={`text-xs ${isToday ? 'text-sage-500 font-medium' : 'text-warm-300'}`}>
-                    {weekdays[d.getDay()]}
+                <div key={i} className="flex flex-col items-center gap-1.5">
+                  <span className={`text-[10px] font-medium ${isToday ? 'text-sage-500' : 'text-warm-300'}`}>
+                    {['日','一','二','三','四','五','六'][d.getDay()]}
                   </span>
                   <div className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all
-                    ${hasLog ? 'bg-sage-400' : isToday ? 'bg-cream-200 border border-sage-200' : 'bg-cream-200'}
-                  `}>
+                    ${hasLog ? 'bg-sage-400' : isToday ? 'border-2 border-sage-200 bg-transparent' : 'bg-cream-200'}`}>
                     {hasLog
                       ? <div className="w-2 h-2 rounded-full bg-white" />
-                      : <span className="text-warm-200 text-xs">{d.getDate()}</span>
+                      : <span className={`text-[11px] ${isToday ? 'text-sage-400 font-semibold' : 'text-warm-300'}`}>{d.getDate()}</span>
                     }
                   </div>
                 </div>
@@ -244,47 +193,69 @@ export function Home() {
           </div>
         </Card>
 
-        {/* Dual CTA */}
+        {/* ── DAILY SUGGESTION ────────────────────────────────── */}
+        <Card animate className="mt-2.5 px-4 py-3.5" delay={0.32}>
+          <div className="flex gap-3 items-start">
+            <div className="w-0.5 self-stretch rounded-full bg-sage-200 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="text-[10px] font-semibold text-warm-300 uppercase tracking-wider mb-1.5">今日提示</p>
+              <p className="text-[13px] text-warm-500 leading-relaxed">{getSuggestion(streak, daysSince)}</p>
+            </div>
+          </div>
+        </Card>
+
+        {/* ── CTA ─────────────────────────────────────────────── */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
-          className="mt-5 flex gap-3"
+          transition={{ delay: 0.38 }}
+          className="mt-4 flex gap-3"
         >
-          <Button size="lg" fullWidth onClick={() => navigate('/log')} className="flex-1">
+          {/* Primary: start log */}
+          <button
+            onClick={() => navigate('/log')}
+            className="flex-1 flex items-center justify-center gap-2 py-4 rounded-3xl bg-sage-400 text-white text-[15px] font-semibold shadow-soft active:scale-[0.97] transition-transform"
+          >
+            <PlusIcon />
             開始記錄
-          </Button>
+          </button>
+          {/* Secondary: breathing */}
           <button
             onClick={() => navigate('/breathing')}
-            className="flex-shrink-0 flex flex-col items-center justify-center gap-1 px-5 py-3 rounded-3xl bg-white border border-cream-200 shadow-soft text-warm-500 text-xs font-medium active:scale-95 transition-transform"
+            className="w-[72px] flex flex-col items-center justify-center gap-1.5 py-3.5 rounded-3xl bg-white border border-cream-200 shadow-soft text-warm-400 active:scale-[0.97] transition-transform"
           >
-            <BreathIcon />
-            <span>呼吸</span>
+            <WindIcon />
+            <span className="text-[11px] font-medium">呼吸</span>
           </button>
         </motion.div>
 
-        {/* Recent logs */}
-        {logs.length > 0 && (
+        {/* ── RECENT LOGS ─────────────────────────────────────── */}
+        {logs.length > 0 ? (
           <div className="mt-6">
             <div className="flex justify-between items-center mb-3">
-              <p className="text-sm font-medium text-warm-500">最近練習</p>
-              <button onClick={() => navigate('/timeline')} className="text-xs text-sage-500">查看全部</button>
+              <p className="text-sm font-semibold text-warm-600">最近練習</p>
+              <button onClick={() => navigate('/timeline')} className="text-xs text-sage-500 font-medium">全部查看</button>
             </div>
             <StaggerContainer className="space-y-2">
-              {logs.slice(0, 3).map((log, idx) => (
+              {logs.slice(0, 3).map(log => (
                 <StaggerItem key={log.id}>
-                  <Card className="p-3">
+                  <Card className="px-4 py-3">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-2xl bg-sage-50 flex items-center justify-center flex-shrink-0">
-                        <span className="text-xs font-bold text-sage-500">
+                      {/* Date badge */}
+                      <div className="w-10 flex-shrink-0 text-center">
+                        <p className="text-base font-bold text-warm-600 leading-none">
                           {new Date(log.date + 'T00:00:00').getDate()}
-                        </span>
+                        </p>
+                        <p className="text-[10px] text-warm-300 mt-0.5 leading-none">
+                          {new Date(log.date + 'T00:00:00').toLocaleDateString('zh-TW', { month: 'short' })}
+                        </p>
                       </div>
+                      <div className="w-px h-8 bg-cream-200 flex-shrink-0" />
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-warm-600 truncate">
+                        <p className="text-[13px] font-medium text-warm-600 truncate">
                           {log.yogaTypes.join(' · ') || '自由練習'}
                         </p>
-                        <p className="text-xs text-warm-300 mt-0.5">{log.durationMin} 分鐘</p>
+                        <p className="text-[11px] text-warm-300 mt-0.5">{log.durationMin} 分鐘</p>
                       </div>
                       {log.isFavorite && (
                         <svg className="w-4 h-4 text-blush-400 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
@@ -297,29 +268,37 @@ export function Home() {
               ))}
             </StaggerContainer>
           </div>
-        )}
-
-        {logs.length === 0 && (
-          <Card animate className="mt-4 p-6 text-center" delay={0.5}>
-            <div className="w-12 h-12 rounded-full bg-sage-50 flex items-center justify-center mx-auto mb-3">
-              <svg className="w-6 h-6 text-sage-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-              </svg>
+        ) : (
+          <Card animate className="mt-5 p-6 text-center" delay={0.4}>
+            <div className="w-10 h-10 rounded-full bg-sage-50 flex items-center justify-center mx-auto mb-3">
+              <PlusIcon className="text-sage-400" />
             </div>
-            <p className="text-warm-500 font-medium mb-1">開始你的第一次記錄</p>
-            <p className="text-warm-300 text-sm">每一次練習，都是給自己的禮物</p>
+            <p className="text-[14px] font-medium text-warm-600 mb-1">開始你的第一次記錄</p>
+            <p className="text-[12px] text-warm-300">每一次練習，都是給自己的禮物</p>
           </Card>
         )}
+
       </div>
     </PageTransition>
   )
 }
 
-function BreathIcon() {
+/* ─── Local icons ────────────────────────────────────────────────── */
+
+function PlusIcon({ className = '' }: { className?: string }) {
   return (
-    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round">
-      <circle cx="12" cy="12" r="4" />
-      <path d="M12 2v2M12 20v2M2 12h2M20 12h2M5.64 5.64l1.41 1.41M16.95 16.95l1.41 1.41M5.64 18.36l1.41-1.41M16.95 7.05l1.41-1.41" />
+    <svg className={`w-5 h-5 ${className}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round">
+      <path d="M12 5v14M5 12h14" />
+    </svg>
+  )
+}
+
+function WindIcon() {
+  return (
+    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeLinecap="round">
+      <path d="M3 10 C6 6, 16 6, 20 10" stroke="currentColor" strokeWidth={1.8} />
+      <path d="M3 14 C6 10, 16 10, 20 14" stroke="currentColor" strokeWidth={1.5} opacity="0.65" />
+      <path d="M3 18 C6 14, 16 14, 20 18" stroke="currentColor" strokeWidth={1.2} opacity="0.35" />
     </svg>
   )
 }
