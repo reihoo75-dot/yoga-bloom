@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { AvatarDisplay } from '../components/avatar/AvatarDisplay'
@@ -10,7 +10,7 @@ import { useLogStore } from '../store/useLogStore'
 import { getStageInfo, calculateStreak } from '../utils/xp'
 import { getWeeklyStats, getMonthlyStats } from '../utils/insights'
 import { getTimeOfDay } from '../utils/date'
-import { GREETING_MESSAGES, DAILY_SUGGESTIONS } from '../data/messages'
+import { GREETING_MESSAGES } from '../data/messages'
 import { STAGES } from '../data/avatars'
 
 function getGreeting(name: string): string {
@@ -18,34 +18,22 @@ function getGreeting(name: string): string {
   return msgs[Math.floor(Math.random() * msgs.length)] + (name || '練習者')
 }
 
-function getSuggestion(streak: number, daysSince: number): string {
-  let cat = getTimeOfDay() === 'morning' ? 'morning' : (getTimeOfDay() === 'evening' || getTimeOfDay() === 'night') ? 'evening' : 'afternoon'
-  if (daysSince >= 7) cat = 'return'
-  else if (streak >= 3) cat = 'streak'
-  const set = DAILY_SUGGESTIONS.find(s => s.condition === cat) ?? DAILY_SUGGESTIONS[1]
-  return set.messages[Math.floor(Math.random() * set.messages.length)]
-}
-
 export function Home() {
   const navigate = useNavigate()
   const { settings, avatarState, loadAvatarState } = useAppStore()
   const { logs, loadLogs } = useLogStore()
+
   useEffect(() => { loadAvatarState(); loadLogs() }, [])
 
   const { stage, next, progress } = getStageInfo(avatarState.xp)
   const stageDef = STAGES.find(s => s.id === stage.id)!
   const streak    = calculateStreak(logs)
-  // Estimate days to next stage (~12 XP per practice day)
   const daysToNext = next ? Math.ceil((next.minXp - avatarState.xp) / 12) : 0
   const weekly    = getWeeklyStats(logs)
   const monthly   = getMonthlyStats(logs)
-  const daysSince = logs[0]?.date
-    ? Math.round((Date.now() - new Date(logs[0].date + 'T00:00:00').getTime()) / 86400000)
-    : 999
 
   return (
     <PageTransition className="min-h-screen bg-cream-100 pb-28">
-      {/* Very subtle background accent */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden>
         <div className="absolute -top-20 -right-20 w-72 h-72 rounded-full bg-sage-50 opacity-40" />
       </div>
@@ -67,7 +55,6 @@ export function Home() {
               {getGreeting(settings.nickname)}
             </motion.h1>
           </div>
-          {/* Avatar badge */}
           <motion.button
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -163,7 +150,6 @@ export function Home() {
           transition={{ delay: 0.38 }}
           className="mt-4 flex gap-3"
         >
-          {/* Primary: start log */}
           <button
             onClick={() => navigate('/log')}
             className="flex-1 flex items-center justify-center gap-2 py-4 rounded-3xl bg-sage-400 text-white text-[15px] font-semibold shadow-soft active:scale-[0.97] transition-transform"
@@ -171,7 +157,6 @@ export function Home() {
             <PlusIcon />
             開始記錄
           </button>
-          {/* Secondary: breathing */}
           <button
             onClick={() => navigate('/breathing')}
             className="w-[72px] flex flex-col items-center justify-center gap-1.5 py-3.5 rounded-3xl bg-white border border-cream-200 shadow-soft text-warm-400 active:scale-[0.97] transition-transform"
@@ -193,7 +178,6 @@ export function Home() {
                 <StaggerItem key={log.id}>
                   <Card className="px-4 py-3">
                     <div className="flex items-center gap-3">
-                      {/* Date badge */}
                       <div className="w-10 flex-shrink-0 text-center">
                         <p className="text-base font-bold text-warm-600 leading-none">
                           {new Date(log.date + 'T00:00:00').getDate()}
@@ -226,8 +210,6 @@ export function Home() {
     </PageTransition>
   )
 }
-
-/* ─── Local icons ────────────────────────────────────────────────── */
 
 function PlusIcon({ className = '' }: { className?: string }) {
   return (
