@@ -12,15 +12,6 @@ import { getWeeklyStats, getMonthlyStats } from '../utils/insights'
 import { getTimeOfDay } from '../utils/date'
 import { GREETING_MESSAGES, DAILY_SUGGESTIONS } from '../data/messages'
 import { STAGES } from '../data/avatars'
-import type { SpecialStateType } from '../types'
-
-const SPECIAL_STATE_LABELS: Record<SpecialStateType, { label: string; emoji: string; active: string }> = {
-  menstrual:  { label: '生理期',   emoji: '🌸', active: 'bg-blush-50 text-blush-500 border-blush-200' },
-  cold:       { label: '感冒中',   emoji: '🤧', active: 'bg-beige-50 text-beige-600 border-beige-200' },
-  fatigue:    { label: '疲勞',     emoji: '😴', active: 'bg-warm-50 text-warm-500 border-warm-200' },
-  poor_sleep: { label: '睡眠不足', emoji: '🌙', active: 'bg-warm-50 text-warm-500 border-warm-200' },
-}
-const ALL_STATES: SpecialStateType[] = ['menstrual', 'cold', 'fatigue', 'poor_sleep']
 
 function getGreeting(name: string): string {
   const msgs = GREETING_MESSAGES[getTimeOfDay()]
@@ -37,11 +28,9 @@ function getSuggestion(streak: number, daysSince: number): string {
 
 export function Home() {
   const navigate = useNavigate()
-  const { settings, avatarState, loadAvatarState, todaySpecialState, loadTodaySpecialState, setTodaySpecialState, clearTodaySpecialState } = useAppStore()
+  const { settings, avatarState, loadAvatarState } = useAppStore()
   const { logs, loadLogs } = useLogStore()
-  const today = new Date().toISOString().slice(0, 10)
-
-  useEffect(() => { loadAvatarState(); loadLogs(); loadTodaySpecialState(today) }, [])
+  useEffect(() => { loadAvatarState(); loadLogs() }, [])
 
   const { stage, next, progress } = getStageInfo(avatarState.xp)
   const stageDef = STAGES.find(s => s.id === stage.id)!
@@ -103,7 +92,7 @@ export function Home() {
           <div className="flex justify-between items-center mb-1.5">
             <span className="text-[11px] text-warm-400">{stage.name}</span>
             <span className="text-[11px] text-warm-300">
-              {avatarState.xp} XP
+              {avatarState.xp} 經驗值
               {next ? ` · 還需 ${daysToNext} 天升階` : ' · 已達最高段位'}
             </span>
           </div>
@@ -118,35 +107,9 @@ export function Home() {
         </motion.div>
 
         {/* ── DAILY CARD ──────────────────────────────────────── */}
-        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.18 }}>
+        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+          <p className="text-[12px] font-medium text-warm-400 mb-2.5 tracking-wide">抽一張今日牌卡</p>
           <DailyCard />
-        </motion.div>
-
-        {/* ── SPECIAL STATES ──────────────────────────────────── */}
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.22 }} className="mt-3">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-[11px] text-warm-300 mr-0.5">今日狀態</span>
-            {ALL_STATES.map(s => {
-              const info = SPECIAL_STATE_LABELS[s]
-              const isActive = todaySpecialState?.states.includes(s)
-              return (
-                <button
-                  key={s}
-                  onClick={async () => {
-                    const cur = todaySpecialState?.states ?? []
-                    const next = isActive ? cur.filter(x => x !== s) : [...cur, s]
-                    if (next.length === 0) await clearTodaySpecialState(today)
-                    else await setTodaySpecialState({ date: today, states: next, note: todaySpecialState?.note ?? '', updatedAt: new Date().toISOString() })
-                  }}
-                  className={`flex items-center gap-1 px-2.5 py-1 rounded-full border text-xs font-medium transition-all duration-200
-                    ${isActive ? info.active : 'bg-white/70 text-warm-300 border-cream-200'}`}
-                >
-                  <span className="text-[13px]">{info.emoji}</span>
-                  <span>{info.label}</span>
-                </button>
-              )
-            })}
-          </div>
         </motion.div>
 
         {/* ── STATS ROW ───────────────────────────────────────── */}
@@ -190,17 +153,6 @@ export function Home() {
                 </div>
               )
             })}
-          </div>
-        </Card>
-
-        {/* ── DAILY SUGGESTION ────────────────────────────────── */}
-        <Card animate className="mt-2.5 px-4 py-3.5" delay={0.32}>
-          <div className="flex gap-3 items-start">
-            <div className="w-0.5 self-stretch rounded-full bg-sage-200 mt-0.5 flex-shrink-0" />
-            <div>
-              <p className="text-[10px] font-semibold text-warm-300 uppercase tracking-wider mb-1.5">今日提示</p>
-              <p className="text-[13px] text-warm-500 leading-relaxed">{getSuggestion(streak, daysSince)}</p>
-            </div>
           </div>
         </Card>
 
@@ -268,15 +220,7 @@ export function Home() {
               ))}
             </StaggerContainer>
           </div>
-        ) : (
-          <Card animate className="mt-5 p-6 text-center" delay={0.4}>
-            <div className="w-10 h-10 rounded-full bg-sage-50 flex items-center justify-center mx-auto mb-3">
-              <PlusIcon className="text-sage-400" />
-            </div>
-            <p className="text-[14px] font-medium text-warm-600 mb-1">開始你的第一次記錄</p>
-            <p className="text-[12px] text-warm-300">每一次練習，都是給自己的禮物</p>
-          </Card>
-        )}
+        ) : null}
 
       </div>
     </PageTransition>

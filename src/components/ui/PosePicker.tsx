@@ -75,7 +75,7 @@ export function PosePicker({ selected, onToggle, onAddCustom, customPoses = [] }
       </div>
 
       {/* Category filter */}
-      <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+      <div className="flex gap-2 pb-1 scrollbar-hide" style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch', touchAction: 'pan-x' }}>
         {POSE_CATEGORIES.map(cat => (
           <button
             key={cat.id}

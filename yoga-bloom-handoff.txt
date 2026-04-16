@@ -1,0 +1,221 @@
+================================================================
+YOGA BLOOM  ·  新對話交接文件
+最後更新：2026-04-16
+================================================================
+把這份文件全文貼入新的 Claude Code 對話，即可無縫繼續開發。
+================================================================
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+專案概況
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+名稱：Yoga Bloom（App 顯示名稱：Yoga Flow Journal）
+類型：個人瑜珈練習記錄 PWA，繁體中文介面
+目標：溫柔、有質感的日常紀錄，不是追蹤數據，而是與自己溫柔相遇
+工作目錄：D:\users\user\Desktop\yoga-bloom
+執行指令：npm run dev（Port 5173）
+無後端，完全離線，資料存在 IndexedDB + localStorage
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+技術棧
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Vite + React 18 + TypeScript
+Tailwind CSS（自訂色票，tailwind.config.js）
+Zustand（狀態管理，手動 localStorage 持久化）
+Dexie（IndexedDB，練習記錄 + 今日狀態）
+Framer Motion（頁面與元件動畫）
+Recharts（洞察頁圖表）
+React Router v6 HashRouter（#/ 路由）
+vite-plugin-pwa（PWA 支援）
+
+自訂 Tailwind 色票：
+  cream-100/200/300  #FBF7F0 系列（背景）
+  sage-50/100/200/300/400/500/600  #8FAF8F 系列（主題綠）
+  blush-50/100/400/500  #EDB0B8 系列（粉紅）
+  beige-50/100/500/600  #D4B896 系列（米棕）
+  warm-200/300/400/500/600/700  #8B6F5E 系列（文字）
+  scrollbar-hide 定義在 src/index.css
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+路由 & 頁面
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+/               Home          首頁
+/onboarding     Onboarding    引導（4步驟，完成後不再顯示）
+/log            QuickLog      練習記錄（9區塊手風琴，隱藏 BottomNav）
+/timeline       Timeline      日誌列表
+/insights       Insights      練習洞察（週/月/季/年圖表）
+/garden         AvatarGarden  虛擬夥伴花園
+/breathing      Breathing     呼吸練習
+/partners       Partners      合作商家
+/settings       Settings      設定
+/completion     CompletionScreen  完成紀錄慶祝（隱藏 BottomNav）
+
+BottomNav：首頁 / 記錄 / 日誌 / 洞察 / 商家（5 項，從左至右）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+資料儲存
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+localStorage：
+  yoga_bloom_settings      {nickname, avatar, theme, reminderTime, onboardingComplete}
+  yoga_bloom_daily_card    {date, bodyIndex?, mindIndex?, flipped?, variant?}
+  yoga_bloom_avatar        AvatarState 快取
+
+IndexedDB（Dexie，src/db.ts）：
+  yoga_logs                YogaLog 練習記錄
+  yoga_special_states      SpecialState 今日特殊狀態
+
+YogaLog 型別（src/types/index.ts）：
+  id, date, startTime, durationMin, location, yogaTypes[], goals[],
+  poses[], bodySignals[], bodyParts[], bodyNote, emotions[], emotionNote,
+  completionLevel, energyBefore, energyAfter, note, isFavorite, xpEarned
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Store（Zustand）
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+useAppStore  (src/store/useAppStore.ts)
+  settings, avatarState, pendingXP
+  loadAvatarState(), completeOnboarding(), addXP(), addResources(), addBadge()
+  todaySpecialState, loadTodaySpecialState(), setTodaySpecialState(), clearTodaySpecialState()
+
+useLogStore  (src/store/useLogStore.ts)
+  logs[], loadLogs(), addLog(), updateLog(), deleteLog()
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+關鍵頁面實作細節
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+【Home.tsx】
+- 問候語依時段（早/午/晚/夜）從 GREETING_MESSAGES 隨機取
+- XP：daysToNext = ceil((next.minXp - xp) / 12)，顯示「N 經驗值 · 還需 N 天升階」
+- 今日狀態（SpecialStateType）：menstrual/cold/fatigue/poor_sleep，位於 DailyCard 上方
+- 本週日曆：7 天 dot 視圖，今天有外框
+- 已移除：今日提示 Card、首次記錄空白狀態 Card
+
+【DailyCard.tsx】(src/components/ui/DailyCard.tsx)
+- CARD_H：未翻 172px / 翻牌後 240px
+- 背面（未翻）：BrandLogo(size=72) + "今日意圖牌" + 日期 + 動畫 tap hint
+- 狀態選擇器在卡片「下方」（非卡片內），未翻時顯示
+- 翻牌後正面顯示：勵志文字 + 分隔線 + "今日行動" 任務（無狀態標籤、無 CTA 按鈕）
+- 牌卡資料：getCard(bodyIndex, mindIndex, variant) → {text, task}
+- 25 組合 × 3 variant = 75 張
+- localStorage key：'yoga_bloom_daily_card'，含 {date, bodyIndex, mindIndex, flipped, variant}
+
+【BrandLogo.tsx】(src/components/ui/BrandLogo.tsx)
+- 自訂 SVG 冥想人像
+- Props: { size?: number }，預設 120
+- 漸層身體（sage→sandy），三個脈輪圓點（粉#EDB0B8, 藍綠#8ABFBF, 米#ECEADE）
+- 胸前白色符號（open book + stem + petal）
+
+【BodyPartSelector.tsx】(src/components/ui/BodyPartSelector.tsx)
+- SVG viewBox="0 0 120 185"，size 120×185
+- 人體圖：較細長版，torso 寬度約 60px（原本 76px）
+- REGIONS 10 個可點擊區域（circle + rect），click = toggle 選取
+- REGION_MAP：{calves2: 'calves'}（左右小腿 merge 為同一部位）
+- 右側：BODY_PARTS 藥丸按鈕（點擊展開動作建議）
+- 動作建議卡片：無 emoji，顯示 pose.name + pose.nameEn + pose.description
+
+【PosePicker.tsx】(src/components/ui/PosePicker.tsx)
+- 分類篩選列：style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch', touchAction: 'pan-x' }}
+  （flex-shrink-0 在每個 button，確保橫向滑動）
+- 3 欄圖片網格，tap 選取 + tap 再次打開詳情面板
+- 詳情面板：左側圖片 + 右側名稱/難度/操作按鈕
+- 可新增自訂動作
+
+【Partners.tsx】(src/pages/Partners.tsx)
+- 11 個商家（3 免費 + 8 付費/Premium）
+- 分類：全部/商店/課程/活動/商品
+- PartnerCard：<button> 容器，點擊開啟 PartnerDetailSheet
+- PartnerDetailSheet：fixed bottom-0，AnimatePresence，spring 動畫
+  - 外層：className 無 overflow-hidden（重要！否則內容無法滑動）
+  - 內層：overflow-y-auto，maxHeight: calc(88vh - 24px)
+  - 內容：fullDescription / 地址時段網站 / 亮點 / 如何兌換 / CTA 按鈕
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+成長系統
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+STAGES（src/data/avatars.ts）：
+  {id: 'seed',    name: '種子', minXp: 0}
+  {id: 'sprout',  name: '發芽', minXp: 100}
+  {id: 'growth',  name: '成長', minXp: 300}
+  {id: 'bloom',   name: '綻放', minXp: 700}
+  {id: 'radiant', name: '光亮', minXp: 1500}
+
+AVATARS（5）：capybara / raccoon / fox / cat / deer
+頭像圖片：public/images/avatars/avatar_{avatarId}_{stageId}.png
+
+Onboarding AvatarStep：
+  GrowthStagesPreview - 顯示 5 個階段圖片
+  階段 1（seed）：清晰顯示；階段 2~5：blur(4px)+brightness(0.65)+鎖定圖示+XP 需求
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+重要元件清單
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+src/components/
+  avatar/
+    AvatarDisplay.tsx    顯示頭像圖片，依 XP 決定 stage
+    AvatarSVG.tsx        動物 SVG 向量插圖
+  ui/
+    BrandLogo.tsx        品牌冥想人像 SVG
+    BottomNav.tsx        底部導覽（5 項）
+    BodyPartSelector.tsx 身體部位選擇器
+    PosePicker.tsx       動作選擇器
+    DailyCard.tsx        今日意圖牌
+    Card.tsx             通用卡片容器
+    Button.tsx           按鈕（variant: primary/secondary/ghost）
+    TagButton.tsx        切換型標籤按鈕
+    CustomTagInput.tsx   自訂標籤輸入框
+    EnergyPicker.tsx     能量 1~5 選擇器
+    CompletionSlider.tsx 完成度滑桿
+    PageTransition.tsx   頁面動畫容器（PageTransition/StaggerContainer/StaggerItem）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+資料檔案
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+src/data/
+  cards.ts      BODY_STATES[5], MIND_STATES[5], getCard(b,m,v) → {text, task}
+  poses.ts      YOGA_POSES[], POSE_CATEGORIES[], getPosesByBodyPart(partId)
+  bodyParts.ts  BODY_PARTS[] → {id, label, description}
+  options.ts    YOGA_TYPES, GOALS, BODY_SIGNALS, EMOTIONS, DURATION_OPTIONS, LOCATION_OPTIONS
+  avatars.ts    AVATARS[], STAGES[]
+  messages.ts   GREETING_MESSAGES{morning,afternoon,evening,night}[], DAILY_SUGGESTIONS[]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+已完成的主要修改（按時間序）
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Round 1：
+  ✅ DailyCard 3D 翻牌重設計（背面裝飾 → 翻開內容）
+  ✅ BottomNav 重排：商家移至最右
+  ✅ Partners 頁面加入免費商家、新增詳情底部彈窗
+  ✅ XP 改為「N 經驗值 · 還需 N 天升階」
+  ✅ 移除首頁「今日提示」和空白狀態卡片
+
+Round 2：
+  ✅ Onboarding：BrandLogo 取代 🌸，標題改為 "YOGA FLOW JOURNAL"
+  ✅ Onboarding：按鈕文字改為「開始我的瑜珈紀錄」
+  ✅ DailyCard 背面：BrandLogo 取代蓮花 emoji
+  ✅ XP 標籤文字改為「經驗值」
+  ✅ Onboarding AvatarStep：顯示鎖定成長階段預覽
+  ✅ 首頁「今日狀態」移至 DailyCard 上方
+  ✅ BodyPartSelector：SVG 人體圖 + 動作建議
+
+Round 3：
+  ✅ DailyCard 正面：移除狀態標籤（活力充沛/宇靜如常）
+  ✅ DailyCard 正面：移除「開始練習記錄 →」按鈕
+  ✅ PosePicker 分類列：修正橫向滑動（touch-action + WebkitOverflowScrolling）
+  ✅ BodyPartSelector：人體 SVG 更細長，移除動作建議中的 emoji
+  ✅ Partners 詳情彈窗：移除外層 overflow-hidden，修復無法滑到底部
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+已知問題（pre-existing，非本輪引入）
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- Timeline LogCard：<button> 巢狀在 <button> 裡（validateDOMNesting 警告）
+- 無 React Error Boundary
+- 呼吸練習頁功能尚未完整實作
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+使用者偏好（協作方式）
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- 使用者為非技術背景，由 Claude 撰寫所有程式碼
+- 使用繁體中文溝通
+- 視覺風格：日系簡約、溫柔療癒、自然色調
+- 偏好直接做修改，不需長篇說明
+================================================================

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { BODY_STATES, MIND_STATES, getCard } from '../../data/cards'
+import { BrandLogo } from './BrandLogo'
 
 const STORAGE_KEY = 'yoga_bloom_daily_card'
 
@@ -108,7 +109,7 @@ export function DailyCard() {
 
   const canFlip = bodyIndex !== null && mindIndex !== null
   const dateLabel = new Date().toLocaleDateString('zh-TW', { month: 'long', day: 'numeric', weekday: 'short' })
-  const CARD_H = flipped ? 308 : 172
+  const CARD_H = flipped ? 240 : 172
 
   return (
     <div>
@@ -149,8 +150,10 @@ export function DailyCard() {
               <p style={{ fontSize: 11, color: P.label, opacity: 0.55, marginTop: 3 }}>{dateLabel}</p>
             </div>
 
-            {/* Lotus */}
-            <LotusDecoration />
+            {/* Brand logo */}
+            <div>
+              <BrandLogo size={72} />
+            </div>
 
             {/* Bottom hint */}
             <div style={{ width: '100%', textAlign: 'center', zIndex: 1, minHeight: 24 }}>
@@ -182,18 +185,6 @@ export function DailyCard() {
             {/* Glow */}
             <div style={{ position: 'absolute', bottom: -16, right: -16, width: 90, height: 90, borderRadius: '50%', background: P.accentFaint, filter: 'blur(18px)', pointerEvents: 'none' }} />
 
-            {/* State badges */}
-            {bodyIndex !== null && mindIndex !== null && (
-              <div style={{ display: 'flex', gap: 6, marginBottom: 12, zIndex: 1 }}>
-                <span style={{ fontSize: 10, fontWeight: 600, color: P.pillActive, background: P.pillActiveBg, border: `1px solid ${P.pillActive}40`, borderRadius: 20, padding: '3px 10px', letterSpacing: '0.04em' }}>
-                  {BODY_STATES[bodyIndex]}
-                </span>
-                <span style={{ fontSize: 10, fontWeight: 600, color: P.label, background: 'rgba(255,255,255,0.55)', border: `1px solid ${P.divider}`, borderRadius: 20, padding: '3px 10px', letterSpacing: '0.04em' }}>
-                  {MIND_STATES[mindIndex]}
-                </span>
-              </div>
-            )}
-
             {/* Card text */}
             <p style={{ fontSize: 14.5, fontWeight: 600, color: P.title, lineHeight: 1.75, marginBottom: 12, zIndex: 1, flex: 1 }}>
               {card?.text ?? ''}
@@ -203,28 +194,10 @@ export function DailyCard() {
             <div style={{ height: 1, background: P.divider, marginBottom: 10, zIndex: 1 }} />
 
             {/* Task */}
-            <div style={{ zIndex: 1, marginBottom: 14 }}>
+            <div style={{ zIndex: 1 }}>
               <p style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: '0.15em', color: P.label, textTransform: 'uppercase' as const, marginBottom: 5 }}>今日行動</p>
               <p style={{ fontSize: 12.5, color: P.body, lineHeight: 1.7 }}>{card?.task ?? ''}</p>
             </div>
-
-            {/* CTA */}
-            <button
-              onClick={() => navigate('/log')}
-              style={{
-                width: '100%', padding: '11px 0', borderRadius: 14, border: 'none',
-                background: 'linear-gradient(135deg, #9FBF9F, #7A9F7A)', color: '#fff',
-                fontSize: 13, fontWeight: 600, letterSpacing: '0.05em',
-                cursor: 'pointer', boxShadow: '0 3px 14px rgba(143,175,143,0.35)',
-                zIndex: 1, position: 'relative', transition: 'transform 0.15s',
-              }}
-              onMouseDown={e => (e.currentTarget.style.transform = 'scale(0.97)')}
-              onMouseUp={e => (e.currentTarget.style.transform = 'scale(1)')}
-              onTouchStart={e => (e.currentTarget.style.transform = 'scale(0.97)')}
-              onTouchEnd={e => (e.currentTarget.style.transform = 'scale(1)')}
-            >
-              開始練習記錄 →
-            </button>
           </div>
         </div>
       </div>
@@ -288,32 +261,3 @@ export function DailyCard() {
   )
 }
 
-/* ── Lotus decoration SVG ──────────────────────────────────────── */
-function LotusDecoration() {
-  return (
-    <svg width="68" height="68" viewBox="0 0 68 68" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ opacity: 0.72 }}>
-      {/* Outer petals */}
-      {[0, 45, 90, 135, 22.5, 67.5, 112.5, 157.5].map((angle, i) => (
-        <ellipse key={i}
-          cx="34" cy="34" rx="7" ry="20"
-          fill="#8FAF8F"
-          opacity={i < 4 ? 0.18 : 0.11}
-          transform={`rotate(${angle}, 34, 34)`}
-        />
-      ))}
-      {/* Inner petals */}
-      {[0, 60, 120, 30, 90, 150].map((angle, i) => (
-        <ellipse key={'i'+i}
-          cx="34" cy="34" rx="4.5" ry="12"
-          fill="#8FAF8F"
-          opacity={i < 3 ? 0.28 : 0.18}
-          transform={`rotate(${angle}, 34, 34)`}
-        />
-      ))}
-      {/* Center */}
-      <circle cx="34" cy="34" r="6.5" fill="#8FAF8F" opacity="0.22" />
-      <circle cx="34" cy="34" r="3.5" fill="#8FAF8F" opacity="0.45" />
-      <circle cx="34" cy="34" r="1.5" fill="#8FAF8F" opacity="0.7" />
-    </svg>
-  )
-}

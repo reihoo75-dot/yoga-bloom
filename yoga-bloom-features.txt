@@ -1,0 +1,196 @@
+================================================================
+YOGA BLOOM / YOGA FLOW JOURNAL  ·  功能與架構說明
+建立日期：2026-04-16
+================================================================
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+一、技術棧
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+框架：       Vite + React 18 + TypeScript
+樣式：       Tailwind CSS（自訂色系）
+狀態管理：   Zustand（無持久化中間件，手動存 localStorage）
+資料庫：     Dexie（IndexedDB wrapper）
+動畫：       Framer Motion
+圖表：       Recharts
+路由：       React Router v6 + HashRouter（#/ 開頭）
+PWA：        vite-plugin-pwa
+
+無後端，完全離線運作。
+
+自訂 Tailwind 色系：
+  cream  (#FBF7F0) - 背景底色
+  sage   (#8FAF8F) - 主題綠（按鈕、選中、強調）
+  blush  (#EDB0B8) - 粉紅（收藏、週次統計）
+  beige  (#D4B896) - 米棕（月份統計）
+  warm   (#8B6F5E) - 主文字
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+二、路由結構
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+/               → Home（首頁）
+/onboarding     → Onboarding（第一次使用引導）
+/log            → QuickLog（記錄練習，隱藏底部導覽）
+/timeline       → Timeline（日誌列表）
+/insights       → Insights（練習洞察）
+/garden         → AvatarGarden（虛擬夥伴花園）
+/breathing      → Breathing（呼吸練習）
+/partners       → Partners（合作商家）
+/settings       → Settings（設定）
+/completion     → CompletionScreen（完成記錄慶祝，隱藏底部導覽）
+
+底部導覽列（BottomNav）5 個分頁：
+  首頁 / 記錄 / 日誌 / 洞察 / 商家
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+三、資料儲存
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+localStorage 鍵值：
+  yoga_bloom_settings      → 使用者設定（暱稱、頭像、提醒時間、onboardingComplete）
+  yoga_bloom_daily_card    → 今日意圖牌狀態（bodyIndex, mindIndex, flipped, variant, date）
+  yoga_bloom_avatar        → 頭像狀態快取（XP, badges）
+
+IndexedDB（Dexie）資料表：
+  yoga_logs               → YogaLog 練習記錄
+  yoga_special_states     → SpecialState 今日特殊狀態（生理期、感冒、疲勞、睡眠不足）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+四、主要頁面功能
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+【Onboarding 引導】
+  步驟 1：品牌歡迎畫面（BrandLogo + "YOGA FLOW JOURNAL"）
+  步驟 2：輸入暱稱
+  步驟 3：選擇虛擬夥伴動物（卡比巴拉/浣熊/狐狸/貓咪/小鹿）
+          - 顯示 5 個成長階段預覽，後 4 個模糊+鎖定
+  步驟 4：完成確認頁面
+
+【Home 首頁】
+  - 時間感知問候語（早安/午安/晚安 + 暱稱）
+  - XP 進度條（顯示「N 經驗值 · 還需 N 天升階」）
+  - 頭像顯示（點擊前往設定）
+  - 今日狀態標籤（生理期/感冒中/疲勞/睡眠不足，可多選）
+  - 今日意圖牌（DailyCard，3D 翻牌互動）
+  - 統計數字（連續天數 / 本週練習次數 / 本月總分鐘）
+  - 本週日曆（7 天練習打卡視圖）
+  - 快速操作（開始記錄 / 呼吸練習按鈕）
+  - 最近練習列表（最新 3 筆）
+
+【今日意圖牌 DailyCard】
+  - 未選擇狀態：牌卡背面（品牌 Logo + 今日意圖牌）
+  - 選擇身體狀態（5 選項）+ 心理狀態（5 選項）後可翻牌
+  - 翻牌：3D CSS 動畫，顯示對應情境的勵志文字 + 今日行動建議
+  - 牌卡組合：5×5×3 = 75 張不同卡片
+  - 狀態與翻牌結果儲存至 localStorage，每日重置
+
+【QuickLog 練習記錄】
+  9 個可展開的手風琴式區塊：
+  1. 練習時長（預設選項 + 自訂）
+  2. 練習地點（家/教室/戶外/公司/飯店）
+  3. 瑜伽類型（陰瑜珈/流動/哈他/修復/孕婦/其他，可自訂）
+  4. 今日目標（核心/柔軟/壓力釋放/睡眠/能量，可自訂）
+  5. 練習體位（PosePicker：圖片網格 + 分類篩選 + 搜尋 + 自訂）
+  6. 身體感受（BodyPartSelector：SVG 人體圖 + 部位藥丸，附動作建議）
+  7. 情緒狀態（情緒標籤 + 自訂）
+  8. 完成度與能量（滑桿 + 練習前後能量選擇器）
+  9. 給自己的話（備忘錄文字輸入）
+  完成後跳至 CompletionScreen，獲得 XP 與資源
+
+【Timeline 日誌】
+  - 所有練習記錄列表，按日期分組
+  - 可展開查看詳情（動作、部位、情緒、備忘錄）
+  - 收藏/取消收藏（愛心圖示）
+  - 可刪除記錄
+
+【Insights 練習洞察】
+  - 週/月/季/年 切換
+  - 統計卡片（練習次數、總時間、本週/最長連續）
+  - 練習時間折線圖（Recharts）
+  - 瑜伽類型分佈圓餅圖
+  - 情緒趨勢圖
+  空白狀態：「還沒有練習數據」提示
+
+【Partners 合作商家】
+  - 分類篩選（全部/商店/課程/活動/商品）
+  - PREMIUM 升級橫幅
+  - 卡片列表（名稱/標籤/描述/優惠標籤/查看詳情）
+  - 點擊「查看詳情」→ 底部彈窗（可滑動）
+    - 完整描述、地址/時間/網站、亮點列表、兌換說明、CTA 按鈕
+  商家類型（11 個）：
+    免費（3）：每日晨間瑜珈指南、新手必讀體位圖解、正念冥想 Podcast
+    付費/Premium（8）：瑜珈教室、線上課程、精油品牌、有機茶飲等
+
+【Breathing 呼吸練習】
+  - 引導式呼吸動畫（吸氣/停/呼氣循環）
+  - 可選擇呼吸模式
+
+【AvatarGarden 虛擬花園】
+  - 顯示當前虛擬夥伴與成長階段
+  - XP 進度與資源（葉子/星星/花瓣）
+  - 解鎖成就徽章
+
+【Settings 設定】
+  - 修改暱稱與頭像
+  - 提醒時間設定
+  - 資料管理
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+五、成長系統（XP & 頭像）
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+5 個成長階段：
+  種子（0 XP） → 發芽（100）→ 成長（300）→ 綻放（700）→ 光亮（1500+）
+
+頭像圖片路徑：/images/avatars/avatar_{id}_{stage}.png
+  id：capybara / raccoon / fox / cat / deer
+  stage：seed / sprout / growth / bloom / radiant
+
+XP 計算（大約）：每次練習約 8~20 XP，依時長與完成度
+
+虛擬夥伴（AVATARS）：
+  卡比巴拉（capybara）- 溫柔陪伴你
+  浣熊（raccoon）- 好奇與探索
+  狐狸（fox）- 優雅與直覺
+  貓咪（cat）- 獨立與自在
+  小鹿（deer）- 純真與靈動
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+六、核心元件
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+BrandLogo           SVG 冥想人像，漸層身體+三個脈輪點（粉/藍/米）
+DailyCard           今日意圖牌，3D CSS flip，localStorage 持久化
+BodyPartSelector    SVG 人體圖（viewBox 120×185），可點擊區域 + 藥丸按鈕 + 動作建議
+PosePicker          動作選擇器，圖片網格+分類+搜尋+詳情面板
+AvatarDisplay       根據 XP 顯示對應階段頭像圖片（含 idle 動畫）
+AvatarSVG           動物 SVG 向量插圖（開發用）
+BottomNav           5 個分頁，NavLink + Framer Motion 縮放
+Card                通用卡片容器，可選動畫 delay
+EnergyPicker        1~5 能量選擇器（動物圖示）
+CompletionSlider    完成度滑桿（0~100%）
+TagButton           可切換的標籤按鈕
+CustomTagInput      自訂標籤輸入
+BrandLogo           自訂 SVG 品牌 logo
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+七、資料檔案
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+src/data/cards.ts       BODY_STATES[5], MIND_STATES[5], getCard(body,mind,variant)
+src/data/poses.ts       YOGA_POSES[], POSE_CATEGORIES[], getPosesByBodyPart()
+src/data/bodyParts.ts   BODY_PARTS[]（頸部/肩膀/胸腔/核心/下背/骨盆/大腿/腿部/小腿）
+src/data/options.ts     YOGA_TYPES, GOALS, BODY_SIGNALS, EMOTIONS, DURATION_OPTIONS, LOCATION_OPTIONS
+src/data/avatars.ts     AVATARS[], STAGES[]
+src/data/messages.ts    GREETING_MESSAGES, DAILY_SUGGESTIONS（時段問候語）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+八、工具函數
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+src/utils/xp.ts         getStageInfo(), calculateStreak(), calculateXP(), checkNewBadges()
+src/utils/insights.ts   getWeeklyStats(), getMonthlyStats(), getQuarterlyStats()
+src/utils/date.ts       today(), currentTime(), getTimeOfDay()
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+九、已知待優化
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- Timeline 的 LogCard 有 button 巢狀在 button 裡（React validateDOMNesting 警告）
+- 沒有錯誤邊界（Error Boundary）
+- 呼吸練習頁面功能較簡單，尚未完整
+- 沒有雲端同步，資料僅存本機
+================================================================
